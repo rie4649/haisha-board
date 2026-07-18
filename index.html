@@ -443,6 +443,13 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 <div class="sheet">
   <div class="closeBtn" onclick="closeModal('partTimeModal')">閉じる ✕</div>
   <h2>今日のバイトを選ぶ</h2>
+  <label>どの班の応援として追加しますか?</label>
+  <div class="timeTypeRow" id="partTeamButtons">
+    <button type="button" data-team="A" onclick="selectPartTeam('A')">A班</button>
+    <button type="button" data-team="B" onclick="selectPartTeam('B')">B班</button>
+    <button type="button" data-team="none" class="active" onclick="selectPartTeam(null)">班を変えない</button>
+  </div>
+  <label>作業員を選択</label>
   <div class="checkrow" id="partTimeChecks" style="margin-top:10px;"></div>
   <div class="btnrow">
     <button class="secondary" onclick="closeModal('partTimeModal')">キャンセル</button>
@@ -2116,7 +2123,15 @@ const existing = boardAttendanceData[name] || {};
 const merged = Object.assign({}, boardAttendanceData, {[name]: {offType: existing.offType || 'none', team: existing.team || null, part: !existing.part}});
 db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true});
 }
+let selectedPartTeam = null;
+function selectPartTeam(t) {
+selectedPartTeam = t;
+document.querySelectorAll('#partTeamButtons button').forEach(btn => {
+  btn.classList.toggle('active', btn.dataset.team === (t || 'none'));
+});
+}
 function openPartTimeModal() {
+selectPartTeam(null);
 const el = document.getElementById('partTimeChecks');
 if (!collectorList.length) { el.innerHTML = '<span style="color:#999;font-size:13px;">作業員一覧が未登録です</span>'; document.getElementById('partTimeModal').classList.add('show'); return; }
 el.innerHTML = collectorList.map(name => {
@@ -2132,10 +2147,11 @@ const checked = Array.from(document.querySelectorAll('.partTimeCk:checked')).map
 const merged = Object.assign({}, boardAttendanceData);
 collectorList.forEach(name => {
   const existing = merged[name] || {offType: 'none', team: null};
+  const isChecked = checked.includes(name);
   merged[name] = {
     offType: existing.offType || 'none',
-    team: existing.team || null,
-    part: checked.includes(name)
+    team: (isChecked && selectedPartTeam) ? selectedPartTeam : (existing.team || null),
+    part: isChecked
   };
 });
 db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true})
