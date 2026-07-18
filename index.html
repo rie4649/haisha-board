@@ -72,7 +72,6 @@ header h1 { margin: 0; font-size: 18px; }
 .shukkaStatusBtn.done { background: #c8e6c9; color: #256029; }
 
 .boardList { padding: 10px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 620px) { .boardList { grid-template-columns: 1fr; } }
 .card { background: white; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); position: relative; }
 .badge { display: inline-block; font-size: 13px; font-weight: bold; padding: 4px 10px; border-radius: 20px; margin-bottom: 8px; margin-right: 6px; }
 .badge.am { background: #ffe8cc; color: #a85c00; }
@@ -470,7 +469,7 @@ const d = new Date();
 return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 function arrLabel(list) { return (list && list.length) ? list.join('・') : ''; }
-function defaultProfile() { return {bentoType: 'rice', shellfish: false}; }
+function defaultProfile() { return {bentoType: 'rice'}; }
 function itemsLabelFor(items) {
 if (!items) return 'なし';
 const parts = [];
@@ -662,12 +661,12 @@ if (!fullOff.length && !amOff.length && !pmOff.length) {
 }
 renderBentoMiniBox();
 }
-let lastBentoMiniSummary = {total: 0, rice: 0, noodle: 0, side: 0, shellfishNames: []};
+let lastBentoMiniSummary = {total: 0, rice: 0, noodle: 0, side: 0, shellfishNo: 0, shellfishNames: []};
 function renderBentoMiniBox() {
 const box = document.getElementById('bentoMiniBox');
 if (!box) return;
 if (!collectorList.length) { box.innerHTML = '<div style="color:#999;font-size:13px;">作業員未登録です</div>'; return; }
-let total = 0, rice = 0, noodle = 0, side = 0, unset = 0;
+let total = 0, rice = 0, noodle = 0, side = 0, shellfishNo = 0, unset = 0;
 const shellfishNames = [];
 collectorList.forEach(name => {
   const state = boardAttendanceData[name] || {offType: 'none'};
@@ -678,18 +677,18 @@ collectorList.forEach(name => {
   if (profile.bentoType === 'rice') rice++;
   else if (profile.bentoType === 'noodle') noodle++;
   else if (profile.bentoType === 'side') side++;
-  if (profile.shellfish) shellfishNames.push(name);
+  else if (profile.bentoType === 'shellfish_no') { shellfishNo++; shellfishNames.push(name); }
 });
 let html = '<div class="bentoMiniBig">合計 ' + total + '個</div>';
-html += '<div class="bentoMiniSub">お弁当' + rice + '・おかずのみ' + side + '・麺' + noodle + (unset ? '・未設定' + unset : '') + '</div>';
-if (shellfishNames.length) html += '<div class="bentoMiniSub" style="color:#c0392b;">甲殻類不可:' + shellfishNames.length + '(' + shellfishNames.join('・') + ')</div>';
+html += '<div class="bentoMiniSub">お弁当' + rice + '・おかずのみ' + side + '・麺' + noodle + '・甲殻類不可' + shellfishNo + (unset ? '・未設定' + unset : '') + '</div>';
+if (shellfishNames.length) html += '<div class="bentoMiniSub" style="color:#c0392b;">甲殻類不可の人:' + shellfishNames.join('・') + '</div>';
 html += '<button class="copyBtnSmall" onclick="copyBentoMiniSummary()">この内容をコピー</button>';
 box.innerHTML = html;
-lastBentoMiniSummary = {total, rice, noodle, side, shellfishNames};
+lastBentoMiniSummary = {total, rice, noodle, side, shellfishNo, shellfishNames};
 }
 function copyBentoMiniSummary() {
-const {total, rice, noodle, side, shellfishNames} = lastBentoMiniSummary;
-let text = formatBigDate(currentDate) + ' のお弁当\n合計:' + total + '個\nお弁当:' + rice + '個\nおかずのみ:' + side + '個\n甲殻類不可:' + shellfishNames.length + '個\n麺:' + noodle + '個';
+const {total, rice, noodle, side, shellfishNo, shellfishNames} = lastBentoMiniSummary;
+let text = formatBigDate(currentDate) + ' のお弁当\n合計:' + total + '個\nお弁当:' + rice + '個\nおかずのみ:' + side + '個\n甲殻類不可:' + shellfishNo + '個\n麺:' + noodle + '個';
 if (shellfishNames.length) text += '\n(甲殻類不可の人:' + shellfishNames.join('・') + ')';
 if (navigator.clipboard && navigator.clipboard.writeText) {
   navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(() => prompt('コピーしてください', text));
@@ -1325,18 +1324,19 @@ const wDiv = document.getElementById('workerSettingsList');
 if (!collectorList.length) {
   wDiv.innerHTML = '<div style="color:#999;font-size:14px;">まだ登録されていません</div>';
 } else {
+  const bentoLabels = {rice: 'お弁当', side: 'おかずのみ', noodle: '麺', shellfish_no: '甲殻類不可'};
   wDiv.innerHTML = collectorList.map(name => {
     const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
     const safe = name.replace(/'/g,"\\'");
-    return '<div class="settingsRow">' +
+    const btns = ['rice','side','noodle','shellfish_no'].map(key =>
+      '<button type="button" class="' + (profile.bentoType === key ? 'active' : '') + '" onclick="updateWorkerBentoType(\'' + safe + '\',\'' + key + '\')">' + bentoLabels[key] + '</button>'
+    ).join('');
+    return '<div class="settingsRow" style="flex-direction:column;align-items:stretch;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;">' +
       '<span class="rName">' + name + '</span>' +
-      '<select onchange="updateWorkerBentoType(\'' + safe + '\',this.value)">' +
-        '<option value="rice" ' + (profile.bentoType === 'rice' ? 'selected' : '') + '>お弁当</option>' +
-        '<option value="noodle" ' + (profile.bentoType === 'noodle' ? 'selected' : '') + '>麺</option>' +
-        '<option value="side" ' + (profile.bentoType === 'side' ? 'selected' : '') + '>おかずのみ</option>' +
-      '</select>' +
-      '<label class="inlineChk"><input type="checkbox" ' + (profile.shellfish ? 'checked' : '') + ' onchange="updateWorkerShellfish(\'' + safe + '\',this.checked)"> 甲殻類不可</label>' +
       '<button class="delX" onclick="removeWorkerSetting(\'' + safe + '\')">削除</button>' +
+      '</div>' +
+      '<div class="timeTypeRow" style="margin-top:8px;">' + btns + '</div>' +
       '</div>';
   }).join('');
 }
@@ -1354,7 +1354,6 @@ const newProfiles = Object.assign({}, workerProfiles, {[name]: profile});
 db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newProfiles});
 }
 function updateWorkerBentoType(name, bentoType) { updateWorkerProfileField(name, 'bentoType', bentoType); }
-function updateWorkerShellfish(name, checked) { updateWorkerProfileField(name, 'shellfish', checked); }
 function removeWorkerSetting(name) {
 if (!confirm(name + 'さんを作業員一覧から削除しますか?(配車ボードや取引先一覧でも使われなくなります)')) return;
 db.collection('pickupSettings').doc('collectorList').set({names: collectorList.filter(n => n !== name)});
