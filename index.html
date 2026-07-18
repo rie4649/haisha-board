@@ -190,6 +190,7 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
         <button type="button" onclick="setAttendanceTeamFilter('free')" data-filter="free">Free</button>
         <button type="button" onclick="setAttendanceTeamFilter('part')" data-filter="part">バイト</button>
       </div>
+      <button type="button" onclick="openPartTimeModal()" style="width:100%;padding:8px;border:1px solid #00897b;background:white;color:#00897b;border-radius:8px;font-size:13px;font-weight:bold;margin-bottom:8px;">👷 今日のバイトを選ぶ</button>
       <div id="attendanceWorkingBox"></div>
     </div>
     <div class="sideBox">
@@ -434,6 +435,19 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   </div>
   <div class="btnrow" id="deleteShukkaRow" style="display:none;">
     <button class="danger" onclick="deleteShukka()">この出荷予定を削除</button>
+  </div>
+</div>
+</div>
+
+<!-- 本日のバイトを選ぶ -->
+<div class="overlay" id="partTimeModal">
+<div class="sheet">
+  <div class="closeBtn" onclick="closeModal('partTimeModal')">閉じる ✕</div>
+  <h2>今日のバイトを選ぶ</h2>
+  <div class="checkrow" id="partTimeChecks" style="margin-top:10px;"></div>
+  <div class="btnrow">
+    <button class="secondary" onclick="closeModal('partTimeModal')">キャンセル</button>
+    <button class="primary" onclick="savePartTimeSelection()">保存</button>
   </div>
 </div>
 </div>
@@ -2101,6 +2115,32 @@ function toggleWorkerPart(name) {
 const existing = boardAttendanceData[name] || {};
 const merged = Object.assign({}, boardAttendanceData, {[name]: {offType: existing.offType || 'none', team: existing.team || null, part: !existing.part}});
 db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true});
+}
+function openPartTimeModal() {
+const el = document.getElementById('partTimeChecks');
+if (!collectorList.length) { el.innerHTML = '<span style="color:#999;font-size:13px;">作業員一覧が未登録です</span>'; document.getElementById('partTimeModal').classList.add('show'); return; }
+el.innerHTML = collectorList.map(name => {
+  const isPart = !!(boardAttendanceData[name] && boardAttendanceData[name].part);
+  const team = (boardAttendanceData[name] && boardAttendanceData[name].team) || null;
+  const teamLabelsShort = {A: '(A班)', B: '(B班)', free: '(Free)'};
+  return '<label><input type="checkbox" class="partTimeCk" value="' + name + '" ' + (isPart ? 'checked' : '') + '> ' + name + (team ? teamLabelsShort[team] : '') + '</label>';
+}).join('');
+document.getElementById('partTimeModal').classList.add('show');
+}
+function savePartTimeSelection() {
+const checked = Array.from(document.querySelectorAll('.partTimeCk:checked')).map(el => el.value);
+const merged = Object.assign({}, boardAttendanceData);
+collectorList.forEach(name => {
+  const existing = merged[name] || {offType: 'none', team: null};
+  merged[name] = {
+    offType: existing.offType || 'none',
+    team: existing.team || null,
+    part: checked.includes(name)
+  };
+});
+db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true})
+  .then(() => closeModal('partTimeModal'))
+  .catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function removeWorkerSetting(name) {
 if (!confirm(name + 'さんを作業員一覧から削除しますか?(配車ボードや取引先一覧でも使われなくなります)')) return;
