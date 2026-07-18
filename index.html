@@ -45,7 +45,26 @@ header h1 { margin: 0; font-size: 18px; }
 .dateNav input[type=date] { padding: 8px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
 .todayBtn { background: #1D3557 !important; color: white !important; border: none !important; }
 
-.boardList { padding: 10px 12px 90px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.boardLayout { display: flex; gap: 14px; padding: 0 12px 90px; align-items: flex-start; }
+.boardSidebar { width: 280px; flex-shrink: 0; }
+.boardMain { flex: 1; min-width: 0; }
+@media (max-width: 900px) { .boardLayout { flex-direction: column; } .boardSidebar { width: 100%; } }
+
+.sideBox { background: white; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.sideBox h4 { margin: 0 0 8px; font-size: 14px; color: #1D3557; display: flex; justify-content: space-between; align-items: center; }
+.miniAddBtn { border: none; background: #1D3557; color: white; border-radius: 6px; padding: 4px 10px; font-size: 12px; }
+.attendRow { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+.attendRow:last-child { border-bottom: none; }
+.attendRow .callBtn { background: #2e7d32; color: white; border: none; border-radius: 6px; padding: 3px 9px; font-size: 12px; text-decoration: none; }
+.offSummaryLine { font-size: 13px; color: #555; margin-top: 4px; }
+.shukkaItem { font-size: 13px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+.shukkaItem:last-child { border-bottom: none; }
+.shukkaStatusBtn { border: none; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: bold; margin-right: 6px; }
+.shukkaStatusBtn.pending { background: #ffcdd2; color: #b71c1c; }
+.shukkaStatusBtn.done { background: #c8e6c9; color: #256029; }
+.earlyTag { background: #ff9800; color: white; font-size: 11px; padding: 2px 6px; border-radius: 8px; margin-left: 6px; }
+
+.boardList { padding: 10px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 620px) { .boardList { grid-template-columns: 1fr; } }
 .card { background: white; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); position: relative; }
 .badge { display: inline-block; font-size: 13px; font-weight: bold; padding: 4px 10px; border-radius: 20px; margin-bottom: 8px; margin-right: 6px; }
@@ -122,10 +141,12 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 .infoBox { background: #eef4ff; border-radius: 10px; padding: 12px 14px; font-size: 14px; color: #333; margin-bottom: 16px; }
 .infoBox button { margin-top: 8px; width: 100%; padding: 10px; border: none; border-radius: 8px; background: #1D3557; color: white; font-size: 14px; }
 .settingsRow { display: flex; align-items: center; gap: 8px; background: white; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); flex-wrap: wrap; }
+.settingsRow.earlyRow { background: #fff3e0; }
 .settingsRow .rName { font-weight: bold; flex: 1; min-width: 80px; }
 .settingsRow select { width: auto; padding: 6px 8px; font-size: 13px; }
+.settingsRow input[type=tel] { width: 120px; padding: 6px 8px; font-size: 13px; }
 .settingsRow .delX { color: #c0392b; border: 1px solid #c0392b; border-radius: 6px; padding: 4px 10px; font-size: 12px; background: white; }
-.settingsRow label.inlineChk { display: flex; align-items: center; gap: 4px; font-size: 13px; margin: 0; }
+.settingsRow label.inlineChk { display: flex; align-items: center; gap: 4px; font-size: 13px; margin: 0; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -157,7 +178,25 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
     <button class="todayBtn" onclick="goToday()">📍 今日に戻る</button>
   </div>
 </div>
-<div class="boardList" id="boardList"></div>
+<div class="boardLayout">
+  <div class="boardSidebar">
+    <div class="sideBox">
+      <h4>👥 出勤者</h4>
+      <div id="attendanceWorkingBox"></div>
+    </div>
+    <div class="sideBox">
+      <h4>🛌 休み</h4>
+      <div id="attendanceOffBox"></div>
+    </div>
+    <div class="sideBox">
+      <h4>📦 出荷 <button class="miniAddBtn" onclick="openAddShukka()">＋追加</button></h4>
+      <div id="shukkaListBox"></div>
+    </div>
+  </div>
+  <div class="boardMain">
+    <div class="boardList" id="boardList"></div>
+  </div>
+</div>
 <button class="fab" onclick="openAddEntry()">＋</button>
 </div>
 
@@ -186,7 +225,7 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
     <button onclick="window.open('https://rie4649.github.io/hikitorisaki-kanri/','_blank')">取引先管理を開く</button>
   </div>
 
-  <h3>作業員一覧(お弁当設定も含む・取引先管理と共有)</h3>
+  <h3>作業員一覧(お弁当設定・電話・早い人フラグ / 取引先管理と共有)</h3>
   <div id="workerSettingsList"></div>
   <div class="addRow">
     <input type="text" id="newWorkerInput" placeholder="例:川村">
@@ -278,6 +317,44 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 </div>
 </div>
 
+<!-- 追加/編集(出荷) -->
+<div class="overlay" id="shukkaModal">
+<div class="sheet">
+  <div class="closeBtn" onclick="closeModal('shukkaModal')">閉じる ✕</div>
+  <h2 id="shukkaModalTitle">出荷を追加</h2>
+  <input type="hidden" id="editShukkaId">
+
+  <label>会社名</label>
+  <div class="searchBoxWrap">
+    <input type="text" id="shukkaCompanyInput" placeholder="会社名を入力(取引先一覧から候補が出ます)" autocomplete="off">
+    <div class="searchSuggest" id="shukkaCompanySuggest"></div>
+  </div>
+
+  <label>出荷品</label>
+  <input type="text" id="shukkaItemInput" placeholder="例:再生資源A 10袋">
+
+  <label>作業員(複数可)</label>
+  <div>
+    <button type="button" class="shuhinToggle" id="shukkaWorkersToggleBtn" onclick="toggleShukkaWorkersPanel()">作業員を選択 ▾</button>
+    <div class="checkrow shuhinPanel" id="shukkaWorkersChecks"></div>
+  </div>
+
+  <label>車</label>
+  <div class="searchBoxWrap">
+    <input type="text" id="shukkaTruckInput" placeholder="車を入力(トラック一覧から候補が出ます)" autocomplete="off">
+    <div class="searchSuggest" id="shukkaTruckSuggest"></div>
+  </div>
+
+  <div class="btnrow">
+    <button class="secondary" onclick="closeModal('shukkaModal')">キャンセル</button>
+    <button class="primary" onclick="saveShukka()">保存</button>
+  </div>
+  <div class="btnrow" id="deleteShukkaRow" style="display:none;">
+    <button class="danger" onclick="deleteShukka()">この出荷予定を削除</button>
+  </div>
+</div>
+</div>
+
 <!-- 取引先詳細(読み取り専用) -->
 <div class="overlay" id="companyDetailModal">
 <div class="sheet">
@@ -330,11 +407,15 @@ let truckList = [];
 let collectorList = [];
 let workerProfiles = {};
 let boardEntries = [];
+let shukkaEntries = [];
 let currentDate = todayStr();
 let bentoDate = todayStr();
 let bentoDailyData = {};
+let boardAttendanceData = {};
 let boardUnsub = null;
 let bentoUnsub = null;
+let boardAttendanceUnsub = null;
+let shukkaUnsub = null;
 let activeMainTab = 'board';
 
 function todayStr() {
@@ -343,6 +424,7 @@ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + St
 }
 function newId() { return 'e_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function arrLabel(list) { return (list && list.length) ? list.join('・') : ''; }
+function defaultProfile() { return {bentoType: 'rice', shellfish: false, phone: '', earlyReturn: false}; }
 
 function switchMainTab(tab) {
 activeMainTab = tab;
@@ -364,6 +446,7 @@ document.getElementById('companiesCount').textContent = companies.length;
 function subscribeList(docName, setter) {
 db.collection('pickupSettings').doc(docName).onSnapshot(doc => {
   setter((doc.exists && doc.data().names) ? doc.data().names : []);
+  renderAttendanceBoxes();
   if (activeMainTab === 'bento') renderBentoSummaryAndList();
   if (activeMainTab === 'settings') renderSettingsLists();
 });
@@ -372,6 +455,7 @@ subscribeList('truckList', v => truckList = v);
 subscribeList('collectorList', v => collectorList = v);
 db.collection('pickupSettings').doc('workerBentoProfiles').onSnapshot(doc => {
 workerProfiles = (doc.exists && doc.data().profiles) ? doc.data().profiles : {};
+renderAttendanceBoxes();
 if (activeMainTab === 'bento') renderBentoSummaryAndList();
 if (activeMainTab === 'settings') renderSettingsLists();
 });
@@ -412,6 +496,18 @@ boardUnsub = db.collection('haishaBoard').where('date', '==', currentDate).onSna
   snapshot.forEach(doc => boardEntries.push({id: doc.id, ...doc.data()}));
   boardEntries.sort((a,b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
   renderBoard();
+});
+if (boardAttendanceUnsub) boardAttendanceUnsub();
+boardAttendanceUnsub = db.collection('bentoDaily').doc(currentDate).onSnapshot(doc => {
+  boardAttendanceData = (doc.exists && doc.data().entries) ? doc.data().entries : {};
+  renderAttendanceBoxes();
+});
+if (shukkaUnsub) shukkaUnsub();
+shukkaUnsub = db.collection('shukkaBoard').where('date', '==', currentDate).onSnapshot(snapshot => {
+  shukkaEntries = [];
+  snapshot.forEach(doc => shukkaEntries.push({id: doc.id, ...doc.data()}));
+  shukkaEntries.sort((a,b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
+  renderShukkaBox();
 });
 }
 
@@ -454,6 +550,178 @@ const newStatus = (e.status === 'done') ? 'pending' : 'done';
 db.collection('haishaBoard').doc(entryId).update({status: newStatus});
 }
 
+// ---- 出勤者/休み サイドボックス ----
+function attendanceRowHtml(name) {
+const profile = workerProfiles[name] || {};
+const state = boardAttendanceData[name] || {offType: 'none'};
+let tag = '';
+if (state.offType === 'am_off') tag = ' <span style="color:#a85c00;font-size:11px;">(午前休み)</span>';
+if (state.offType === 'pm_off') tag = ' <span style="color:#1d3f8f;font-size:11px;">(午後休み)</span>';
+const early = profile.earlyReturn ? '<span class="earlyTag">早</span>' : '';
+const call = profile.phone ? '<a class="callBtn" href="tel:' + profile.phone + '">📞</a>' : '';
+return '<div class="attendRow"><span>' + name + tag + early + '</span>' + call + '</div>';
+}
+function renderAttendanceBoxes() {
+const workingBox = document.getElementById('attendanceWorkingBox');
+const offBox = document.getElementById('attendanceOffBox');
+if (!workingBox || !offBox) return;
+if (!collectorList.length) {
+  workingBox.innerHTML = '<div style="color:#999;font-size:13px;">作業員未登録です</div>';
+  offBox.innerHTML = '';
+  return;
+}
+const present = [], amOff = [], pmOff = [], fullOff = [];
+collectorList.forEach(name => {
+  const state = boardAttendanceData[name] || {offType: 'none'};
+  if (state.offType === 'full_off') { fullOff.push(name); return; }
+  present.push(name);
+  if (state.offType === 'am_off') amOff.push(name);
+  if (state.offType === 'pm_off') pmOff.push(name);
+});
+workingBox.innerHTML = present.length ? present.map(attendanceRowHtml).join('') : '<div style="color:#999;font-size:13px;">本日出勤者なし</div>';
+let offHtml = '';
+if (!fullOff.length && !amOff.length && !pmOff.length) {
+  offHtml = '<div style="color:#999;font-size:13px;">本日休みの人はいません</div>';
+} else {
+  if (fullOff.length) offHtml += '<div class="offSummaryLine">1日休み(' + fullOff.length + '名):' + fullOff.join('・') + '</div>';
+  if (amOff.length) offHtml += '<div class="offSummaryLine">午前休み(' + amOff.length + '名):' + amOff.join('・') + '</div>';
+  if (pmOff.length) offHtml += '<div class="offSummaryLine">午後休み(' + pmOff.length + '名):' + pmOff.join('・') + '</div>';
+}
+offBox.innerHTML = offHtml;
+}
+
+// ---- 出荷 サイドボックス ----
+function renderShukkaBox() {
+const box = document.getElementById('shukkaListBox');
+if (!box) return;
+if (!shukkaEntries.length) { box.innerHTML = '<div style="color:#999;font-size:13px;">まだ出荷予定がありません</div>'; return; }
+box.innerHTML = shukkaEntries.map(s => {
+  const status = s.status || 'pending';
+  const linked = !!s.companyId;
+  let html = '<div class="shukkaItem" onclick="openEditShukka(\'' + s.id + '\')">';
+  html += '<button class="shukkaStatusBtn ' + status + '" onclick="event.stopPropagation();toggleShukkaStatus(\'' + s.id + '\')">' + (status === 'done' ? '出荷済' : '未出荷') + '</button>';
+  html += '<span class="companyName' + (linked ? ' linked' : '') + '" style="font-size:14px;" onclick="event.stopPropagation();' + (linked ? "showCompanyDetail('" + s.companyId + "')" : '') + '">' + (s.companyName || '(会社名未入力)') + '</span>';
+  if (s.shippedItem) html += '<div class="rowLine" style="font-size:13px;">📦 ' + s.shippedItem + '</div>';
+  if (s.workers && s.workers.length) html += '<div class="rowLine" style="font-size:13px;">👷 ' + arrLabel(s.workers) + '</div>';
+  if (s.truck) html += '<div class="rowLine" style="font-size:13px;">🚚 ' + s.truck + '</div>';
+  html += '</div>';
+  return html;
+}).join('');
+}
+function toggleShukkaStatus(id) {
+const s = shukkaEntries.find(x => x.id === id);
+if (!s) return;
+const newStatus = (s.status === 'done') ? 'pending' : 'done';
+db.collection('shukkaBoard').doc(id).update({status: newStatus});
+}
+let selectedShukkaCompanyId = null;
+function openAddShukka() {
+document.getElementById('shukkaModalTitle').textContent = '出荷を追加';
+document.getElementById('editShukkaId').value = '';
+document.getElementById('deleteShukkaRow').style.display = 'none';
+document.getElementById('shukkaCompanyInput').value = '';
+selectedShukkaCompanyId = null;
+document.getElementById('shukkaItemInput').value = '';
+document.getElementById('shukkaTruckInput').value = '';
+fillShukkaWorkersChecks([]);
+document.getElementById('shukkaWorkersChecks').style.display = 'none';
+document.getElementById('shukkaModal').classList.add('show');
+}
+function openEditShukka(id) {
+const s = shukkaEntries.find(x => x.id === id);
+if (!s) return;
+document.getElementById('shukkaModalTitle').textContent = '出荷を編集';
+document.getElementById('editShukkaId').value = s.id;
+document.getElementById('deleteShukkaRow').style.display = 'flex';
+document.getElementById('shukkaCompanyInput').value = s.companyName || '';
+selectedShukkaCompanyId = s.companyId || null;
+document.getElementById('shukkaItemInput').value = s.shippedItem || '';
+document.getElementById('shukkaTruckInput').value = s.truck || '';
+fillShukkaWorkersChecks(s.workers || []);
+document.getElementById('shukkaWorkersChecks').style.display = 'none';
+document.getElementById('shukkaModal').classList.add('show');
+}
+function fillShukkaWorkersChecks(selected) {
+const el = document.getElementById('shukkaWorkersChecks');
+if (!collectorList.length) { el.innerHTML = '<span style="color:#999;font-size:13px;">作業員一覧が未登録です</span>'; return; }
+el.innerHTML = collectorList.map(name => '<label><input type="checkbox" class="shukkaWorkerCk" value="' + name + '" ' + (selected.includes(name) ? 'checked' : '') + '> ' + name + '</label>').join('');
+}
+function toggleShukkaWorkersPanel() {
+const panel = document.getElementById('shukkaWorkersChecks');
+panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'flex' : 'none';
+}
+const shukkaCompanyInput = document.getElementById('shukkaCompanyInput');
+shukkaCompanyInput.addEventListener('input', () => { selectedShukkaCompanyId = null; renderShukkaCompanySuggest(); });
+function renderShukkaCompanySuggest() {
+const keyword = shukkaCompanyInput.value.trim();
+const box = document.getElementById('shukkaCompanySuggest');
+if (!keyword) { box.classList.remove('show'); return; }
+const matches = companies.filter(c => companyMatchesKeyword(c, keyword)).slice(0, 8);
+if (!matches.length) { box.classList.remove('show'); return; }
+box.innerHTML = matches.map(c => '<div class="sItem" onclick="selectShukkaCompanySuggest(\'' + c.id + '\')">' + c.name + '</div>').join('');
+box.classList.add('show');
+}
+function selectShukkaCompanySuggest(companyId) {
+const c = companies.find(x => x.id === companyId);
+if (!c) return;
+shukkaCompanyInput.value = c.name;
+selectedShukkaCompanyId = companyId;
+document.getElementById('shukkaCompanySuggest').classList.remove('show');
+}
+const shukkaTruckInput = document.getElementById('shukkaTruckInput');
+shukkaTruckInput.addEventListener('input', renderShukkaTruckSuggest);
+shukkaTruckInput.addEventListener('focus', renderShukkaTruckSuggest);
+function renderShukkaTruckSuggest() {
+const keyword = shukkaTruckInput.value.trim();
+const box = document.getElementById('shukkaTruckSuggest');
+const matches = keyword ? truckList.filter(t => t.includes(keyword)) : truckList;
+if (!matches.length) { box.classList.remove('show'); return; }
+box.innerHTML = matches.slice(0,8).map(t => '<div class="sItem" onclick="selectShukkaTruckSuggest(\'' + t.replace(/'/g,"\\'") + '\')">' + t + '</div>').join('');
+box.classList.add('show');
+}
+function selectShukkaTruckSuggest(name) {
+shukkaTruckInput.value = name;
+document.getElementById('shukkaTruckSuggest').classList.remove('show');
+}
+document.addEventListener('click', (e) => {
+if (!e.target.closest('#shukkaCompanyInput') && !e.target.closest('#shukkaCompanySuggest')) document.getElementById('shukkaCompanySuggest').classList.remove('show');
+if (!e.target.closest('#shukkaTruckInput') && !e.target.closest('#shukkaTruckSuggest')) document.getElementById('shukkaTruckSuggest').classList.remove('show');
+});
+function saveShukka() {
+const companyName = shukkaCompanyInput.value.trim();
+if (!companyName) { alert('会社名を入力してください'); return; }
+const workers = Array.from(document.querySelectorAll('.shukkaWorkerCk:checked')).map(el => el.value);
+const data = {
+  date: currentDate,
+  companyName,
+  companyId: selectedShukkaCompanyId,
+  shippedItem: document.getElementById('shukkaItemInput').value.trim(),
+  workers,
+  truck: shukkaTruckInput.value.trim()
+};
+const editId = document.getElementById('editShukkaId').value;
+if (editId) {
+  db.collection('shukkaBoard').doc(editId).update(data)
+    .then(() => closeModal('shukkaModal'))
+    .catch(err => alert('保存に失敗しました: ' + err.message));
+} else {
+  data.status = 'pending';
+  data.createdAtMs = Date.now();
+  data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+  db.collection('shukkaBoard').add(data)
+    .then(() => closeModal('shukkaModal'))
+    .catch(err => alert('保存に失敗しました: ' + err.message));
+}
+}
+function deleteShukka() {
+const editId = document.getElementById('editShukkaId').value;
+if (!editId) return;
+if (!confirm('この出荷予定を削除しますか?')) return;
+db.collection('shukkaBoard').doc(editId).delete()
+  .then(() => closeModal('shukkaModal'))
+  .catch(err => alert('削除に失敗しました: ' + err.message));
+}
+
 // ---- 会社詳細(読み取り専用) ----
 function manifestLabelFor(c) {
 if (!c || c.manifestHas !== 'あり') return 'なし';
@@ -492,7 +760,7 @@ document.getElementById('companyDetailModal').classList.add('show');
 
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
-// ---- 追加/編集モーダル ----
+// ---- 追加/編集モーダル(配車) ----
 let selectedTimeType = 'am';
 let selectedCompanyId = null;
 let selectedLocId = null;
@@ -587,7 +855,7 @@ if (!collectorList.includes(name)) {
   db.collection('pickupSettings').doc('collectorList').set({names: newList});
 }
 if (!workerProfiles[name]) {
-  const newProfiles = Object.assign({}, workerProfiles, {[name]: {bentoType: 'noodle', shellfish: false}});
+  const newProfiles = Object.assign({}, workerProfiles, {[name]: defaultProfile()});
   db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newProfiles});
 }
 }
@@ -740,39 +1008,41 @@ function defaultNeedBento(offType) {
 return offType !== 'full_off';
 }
 
-let lastBentoSummary = {total: 0, noodle: 0, side: 0, shellfishNames: []};
+let lastBentoSummary = {total: 0, rice: 0, noodle: 0, side: 0, shellfishNames: []};
 function renderBentoSummaryAndList() {
 if (!collectorList.length) {
   document.getElementById('bentoSummaryBox').innerHTML = '<div class="sub">作業員一覧が未登録です。設定タブから登録してください。</div>';
   document.getElementById('bentoWorkerList').innerHTML = '';
   return;
 }
-let total = 0, noodle = 0, side = 0, unset = 0;
+let total = 0, rice = 0, noodle = 0, side = 0, unset = 0;
 const shellfishNames = [];
 collectorList.forEach(name => {
   const state = getWorkerState(name);
   if (!state.needBento) return;
   total++;
   const profile = workerProfiles[name];
-  if (!profile) { unset++; return; }
-  if (profile.bentoType === 'noodle') noodle++;
+  if (!profile || !profile.bentoType) { unset++; return; }
+  if (profile.bentoType === 'rice') rice++;
+  else if (profile.bentoType === 'noodle') noodle++;
   else if (profile.bentoType === 'side') side++;
   if (profile.shellfish) shellfishNames.push(name);
 });
 let html = '<div class="big">本日のお弁当:' + total + '個</div>';
-html += '<div class="sub">麺:' + noodle + '個 ／ おかずのみ:' + side + '個' + (unset ? ' ／ 種類未設定:' + unset + '個' : '') + '</div>';
+html += '<div class="sub">お弁当:' + rice + '個 ／ おかずのみ:' + side + '個 ／ 甲殻類不可:' + shellfishNames.length + '個 ／ 麺:' + noodle + '個' + (unset ? ' ／ 種類未設定:' + unset + '個' : '') + '</div>';
 if (shellfishNames.length) html += '<div class="warn">⚠️ 甲殻類が食べられない人:' + shellfishNames.join('・') + '</div>';
 if (unset) html += '<div class="warn">⚠️ 設定タブでお弁当の種類が未設定の人がいます</div>';
 html += '<button class="copyBtn" onclick="copyBentoSummary()">この内容をコピー</button>';
 document.getElementById('bentoSummaryBox').innerHTML = html;
-lastBentoSummary = {total, noodle, side, shellfishNames};
+lastBentoSummary = {total, rice, noodle, side, shellfishNames};
 
 const list = document.getElementById('bentoWorkerList');
 list.innerHTML = collectorList.map(name => {
   const state = getWorkerState(name);
   const profile = workerProfiles[name] || {};
   const tags = [];
-  if (profile.bentoType === 'noodle') tags.push('麺');
+  if (profile.bentoType === 'rice') tags.push('お弁当');
+  else if (profile.bentoType === 'noodle') tags.push('麺');
   else if (profile.bentoType === 'side') tags.push('おかずのみ');
   else tags.push('種類未設定');
   if (profile.shellfish) tags.push('🦐不可');
@@ -793,7 +1063,6 @@ const merged = Object.assign({}, bentoDailyData, {[name]: newState});
 db.collection('bentoDaily').doc(bentoDate).set({entries: merged}, {merge: true});
 }
 function setWorkerOffType(name, offType) {
-const cur = getWorkerState(name);
 const newState = {offType, needBento: defaultNeedBento(offType)};
 saveBentoState(name, newState);
 }
@@ -802,9 +1071,9 @@ const cur = getWorkerState(name);
 saveBentoState(name, {offType: cur.offType, needBento: checked});
 }
 function copyBentoSummary() {
-const {total, noodle, side, shellfishNames} = lastBentoSummary;
-let text = formatBigDate(bentoDate) + ' のお弁当:合計' + total + '個(麺' + noodle + '・おかずのみ' + side + ')';
-if (shellfishNames.length) text += '\n甲殻類抜き必要:' + shellfishNames.join('・');
+const {total, rice, noodle, side, shellfishNames} = lastBentoSummary;
+let text = formatBigDate(bentoDate) + ' のお弁当\n合計:' + total + '個\nお弁当:' + rice + '個\nおかずのみ:' + side + '個\n甲殻類不可:' + shellfishNames.length + '個\n麺:' + noodle + '個';
+if (shellfishNames.length) text += '\n(甲殻類不可の人:' + shellfishNames.join('・') + ')';
 if (navigator.clipboard && navigator.clipboard.writeText) {
   navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(() => prompt('コピーしてください', text));
 } else {
@@ -819,15 +1088,18 @@ if (!collectorList.length) {
   wDiv.innerHTML = '<div style="color:#999;font-size:14px;">まだ登録されていません</div>';
 } else {
   wDiv.innerHTML = collectorList.map(name => {
-    const profile = workerProfiles[name] || {bentoType: 'noodle', shellfish: false};
+    const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
     const safe = name.replace(/'/g,"\\'");
-    return '<div class="settingsRow">' +
-      '<span class="rName">' + name + '</span>' +
+    return '<div class="settingsRow' + (profile.earlyReturn ? ' earlyRow' : '') + '">' +
+      '<span class="rName">' + name + (profile.earlyReturn ? '<span class="earlyTag">早</span>' : '') + '</span>' +
       '<select onchange="updateWorkerBentoType(\'' + safe + '\',this.value)">' +
+        '<option value="rice" ' + (profile.bentoType === 'rice' ? 'selected' : '') + '>お弁当</option>' +
         '<option value="noodle" ' + (profile.bentoType === 'noodle' ? 'selected' : '') + '>麺</option>' +
         '<option value="side" ' + (profile.bentoType === 'side' ? 'selected' : '') + '>おかずのみ</option>' +
       '</select>' +
       '<label class="inlineChk"><input type="checkbox" ' + (profile.shellfish ? 'checked' : '') + ' onchange="updateWorkerShellfish(\'' + safe + '\',this.checked)"> 甲殻類不可</label>' +
+      '<input type="tel" placeholder="電話番号" value="' + (profile.phone || '') + '" onchange="updateWorkerPhone(\'' + safe + '\',this.value)">' +
+      '<label class="inlineChk"><input type="checkbox" ' + (profile.earlyReturn ? 'checked' : '') + ' onchange="updateWorkerEarly(\'' + safe + '\',this.checked)"> 早い人</label>' +
       '<button class="delX" onclick="removeWorkerSetting(\'' + safe + '\')">削除</button>' +
       '</div>';
   }).join('');
@@ -849,16 +1121,15 @@ if (!name) return;
 addWorkerToListsIfMissing(name);
 input.value = '';
 }
-function updateWorkerBentoType(name, bentoType) {
-const profile = Object.assign({bentoType: 'noodle', shellfish: false}, workerProfiles[name] || {}, {bentoType});
+function updateWorkerProfileField(name, field, value) {
+const profile = Object.assign(defaultProfile(), workerProfiles[name] || {}, {[field]: value});
 const newProfiles = Object.assign({}, workerProfiles, {[name]: profile});
 db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newProfiles});
 }
-function updateWorkerShellfish(name, checked) {
-const profile = Object.assign({bentoType: 'noodle', shellfish: false}, workerProfiles[name] || {}, {shellfish: checked});
-const newProfiles = Object.assign({}, workerProfiles, {[name]: profile});
-db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newProfiles});
-}
+function updateWorkerBentoType(name, bentoType) { updateWorkerProfileField(name, 'bentoType', bentoType); }
+function updateWorkerShellfish(name, checked) { updateWorkerProfileField(name, 'shellfish', checked); }
+function updateWorkerPhone(name, phone) { updateWorkerProfileField(name, 'phone', phone.trim()); }
+function updateWorkerEarly(name, checked) { updateWorkerProfileField(name, 'earlyReturn', checked); }
 function removeWorkerSetting(name) {
 if (!confirm(name + 'さんを作業員一覧から削除しますか?(配車ボードや取引先管理でも使われなくなります)')) return;
 db.collection('pickupSettings').doc('collectorList').set({names: collectorList.filter(n => n !== name)});
