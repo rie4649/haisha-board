@@ -190,7 +190,6 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
         <button type="button" onclick="setAttendanceTeamFilter('free')" data-filter="free">Free</button>
         <button type="button" onclick="setAttendanceTeamFilter('part')" data-filter="part">バイト</button>
       </div>
-      <button type="button" onclick="openPartTimeModal()" style="width:100%;padding:8px;border:1px solid #00897b;background:white;color:#00897b;border-radius:8px;font-size:13px;font-weight:bold;margin-bottom:8px;">👷 今日のバイトを選ぶ</button>
       <div id="attendanceWorkingBox"></div>
     </div>
     <div class="sideBox">
@@ -447,7 +446,7 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div class="checkrow" id="partTimeChecks" style="margin-top:10px;"></div>
   <div class="btnrow">
     <button class="secondary" onclick="closeModal('partTimeModal')">キャンセル</button>
-    <button class="primary" onclick="savePartTimeSelection()">保存</button>
+    <button class="primary" onclick="savePartTimeSelection()">決定</button>
   </div>
 </div>
 </div>
@@ -860,6 +859,7 @@ document.querySelectorAll('#attendanceFilterRow button').forEach(btn => {
   btn.classList.toggle('active', btn.dataset.filter === f);
 });
 renderAttendanceBoxes();
+if (f === 'part') openPartTimeModal();
 }
 function renderAttendanceBoxes() {
 const workingBox = document.getElementById('attendanceWorkingBox');
