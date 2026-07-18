@@ -364,6 +364,12 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
     <div class="checkrow shuhinPanel" id="taskWorkersChecks"></div>
   </div>
 
+  <label>車</label>
+  <div class="searchBoxWrap">
+    <input type="text" id="taskTruckInput" placeholder="車を入力(トラック一覧から候補が出ます)" autocomplete="off">
+    <div class="searchSuggest" id="taskTruckSuggest"></div>
+  </div>
+
   <label>メモ</label>
   <textarea id="taskNotesInput" placeholder="例:〇〇会社へ見積もり"></textarea>
 
@@ -782,12 +788,9 @@ const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
 const btnClass = state.offType === 'none' ? '' : 'off';
 const btnLabel = state.offType === 'none' ? '休み' : labels[state.offType];
 const safe = name.replace(/'/g,"\\'");
-const teamBtns = ['A','B','free'].map(t =>
-  '<button type="button" class="' + (state.team === t ? 'active' : '') + '" onclick="assignWorkerTeam(\'' + safe + '\',\'' + t + '\')">' + teamLabels[t] + '</button>'
-).join('');
+const teamTag = state.team ? ' <span style="color:#1D3557;font-size:11px;font-weight:bold;">[' + teamLabels[state.team] + ']</span>' : '';
 return '<div class="attendBlock">' +
-  '<div class="offSelectorRow" style="margin-top:0;margin-bottom:6px;">' + teamBtns + '</div>' +
-  '<div class="attendRow"><span>' + name + '</span>' +
+  '<div class="attendRow"><span>' + name + teamTag + '</span>' +
   '<button class="miniOffBtn ' + btnClass + '" onclick="toggleOffSelector(' + idx + ')">' + btnLabel + '</button></div>' +
   '<div class="offSelectorRow" id="offSel_' + idx + '" style="display:none;">' +
     ['none','am_off','pm_off','full_off'].map(key =>
@@ -861,14 +864,13 @@ collectorList.forEach(name => {
 });
 let html = '<div class="bentoMiniSub">お弁当:' + rice + '個</div>';
 html += '<div class="bentoMiniSub">おかずのみ:' + side + '個</div>';
-if (sideNames.length) html += '<div class="bentoMiniSub" style="color:#666;">(おかずのみの人:' + sideNames.join('・') + ')</div>';
+if (sideNames.length) html += '<div class="bentoMiniSub" style="color:#c0392b;">(おかずのみの人:' + sideNames.join('・') + ')</div>';
 html += '<div class="bentoMiniSub">麺:' + noodle + '個</div>';
-if (noodleNames.length) html += '<div class="bentoMiniSub" style="color:#666;">(麺の人:' + noodleNames.join('・') + ')</div>';
+if (noodleNames.length) html += '<div class="bentoMiniSub" style="color:#c0392b;">(麺の人:' + noodleNames.join('・') + ')</div>';
 html += '<div class="bentoMiniSub">甲殻類不可:' + shellfishNo + '個</div>';
 if (shellfishNames.length) html += '<div class="bentoMiniSub" style="color:#c0392b;">(甲殻類不可の人:' + shellfishNames.join('・') + ')</div>';
 if (unset) html += '<div class="bentoMiniSub">未設定:' + unset + '個</div>';
 html += '<div class="bentoMiniBig">合計:' + total + '個</div>';
-html += '<button class="copyBtnSmall" onclick="copyBentoMiniSummary()">この内容をコピー</button>';
 box.innerHTML = html;
 lastBentoMiniSummary = {total, rice, noodle, side, shellfishNo, shellfishNames, noodleNames, sideNames};
 }
@@ -1034,6 +1036,7 @@ box.innerHTML = taskEntries.map(t => {
   let html = '<div class="shukkaItem" onclick="openEditTask(\'' + t.id + '\')">';
   html += '<span style="font-weight:bold;font-size:14px;color:#1D3557;">' + (t.taskType || '(内容未選択)') + '</span>';
   if (t.workers && t.workers.length) html += '<div class="rowLine" style="font-size:13px;">👷 ' + arrLabel(t.workers) + '</div>';
+  if (t.truck) html += '<div class="rowLine" style="font-size:13px;">🚚 ' + t.truck + '</div>';
   if (t.notes) html += '<div class="rowLine" style="font-size:13px;">📝 ' + t.notes + '</div>';
   html += '</div>';
   return html;
@@ -1062,6 +1065,24 @@ function toggleTaskWorkersPanel() {
 const panel = document.getElementById('taskWorkersChecks');
 panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'flex' : 'none';
 }
+const taskTruckInput = document.getElementById('taskTruckInput');
+taskTruckInput.addEventListener('input', renderTaskTruckSuggest);
+taskTruckInput.addEventListener('focus', renderTaskTruckSuggest);
+function renderTaskTruckSuggest() {
+const keyword = taskTruckInput.value.trim();
+const box = document.getElementById('taskTruckSuggest');
+const matches = keyword ? truckList.filter(t => t.includes(keyword)) : truckList;
+if (!matches.length) { box.classList.remove('show'); return; }
+box.innerHTML = matches.slice(0,8).map(t => '<div class="sItem" onclick="selectTaskTruckSuggest(\'' + t.replace(/'/g,"\\'") + '\')">' + t + '</div>').join('');
+box.classList.add('show');
+}
+function selectTaskTruckSuggest(name) {
+taskTruckInput.value = name;
+document.getElementById('taskTruckSuggest').classList.remove('show');
+}
+document.addEventListener('click', (e) => {
+if (!e.target.closest('#taskTruckInput') && !e.target.closest('#taskTruckSuggest')) document.getElementById('taskTruckSuggest').classList.remove('show');
+});
 function openAddTask() {
 document.getElementById('taskModalTitle').textContent = '業務を追加';
 document.getElementById('editTaskId').value = '';
@@ -1070,6 +1091,7 @@ renderTaskTypeButtons();
 selectTaskType('');
 fillTaskWorkersChecks([]);
 document.getElementById('taskWorkersChecks').style.display = 'none';
+taskTruckInput.value = '';
 document.getElementById('taskNotesInput').value = '';
 document.getElementById('taskModal').classList.add('show');
 }
@@ -1083,6 +1105,7 @@ renderTaskTypeButtons();
 selectTaskType(t.taskType || '');
 fillTaskWorkersChecks(t.workers || []);
 document.getElementById('taskWorkersChecks').style.display = 'none';
+taskTruckInput.value = t.truck || '';
 document.getElementById('taskNotesInput').value = t.notes || '';
 document.getElementById('taskModal').classList.add('show');
 }
@@ -1093,6 +1116,7 @@ const data = {
   date: currentDate,
   taskType: selectedTaskType,
   workers,
+  truck: taskTruckInput.value.trim(),
   notes: document.getElementById('taskNotesInput').value.trim()
 };
 const editId = document.getElementById('editTaskId').value;
@@ -1744,23 +1768,47 @@ db.collection(collectionName).doc(editId).delete()
 }
 
 // ---- その他(共有マスタ)チップ表示 ----
-function renderChips(containerId, list, removeFnName) {
+function getListArrayByDocName(docName) {
+const map = {
+  collectorList: collectorList,
+  truckList: truckList,
+  shuhinOptions: shuhinOptions,
+  manifestTypes: manifestTypeList,
+  shukkaDestinations: shukkaDestinations,
+  shukkaItems: shukkaItemsList,
+  taskTypes: taskTypes
+};
+return map[docName];
+}
+function moveChipItem(docName, index, dir) {
+const list = getListArrayByDocName(docName);
+if (!list) return;
+const newIndex = index + dir;
+if (newIndex < 0 || newIndex >= list.length) return;
+const newList = list.slice();
+const tmp = newList[index]; newList[index] = newList[newIndex]; newList[newIndex] = tmp;
+db.collection('pickupSettings').doc(docName).set({names: newList});
+}
+function renderChips(containerId, list, removeFnName, docName) {
 const div = document.getElementById(containerId);
 if (!div) return;
 if (!list.length) { div.innerHTML = '<div style="color:#999;font-size:13px;">未登録</div>'; return; }
-div.innerHTML = list.map(name => {
+div.innerHTML = list.map((name, i) => {
   const safe = name.replace(/'/g,"\\'");
-  return '<div class="settingsRow"><span class="rName">' + name + '</span><button class="delX" onclick="' + removeFnName + '(\'' + safe + '\')">削除</button></div>';
+  return '<div class="settingsRow"><span class="rName">' + name + '</span>' +
+    '<button type="button" onclick="moveChipItem(\'' + docName + '\',' + i + ',-1)" style="border:none;background:#eee;border-radius:6px;padding:4px 8px;font-size:14px;" ' + (i === 0 ? 'disabled' : '') + '>↑</button>' +
+    '<button type="button" onclick="moveChipItem(\'' + docName + '\',' + i + ',1)" style="border:none;background:#eee;border-radius:6px;padding:4px 8px;font-size:14px;" ' + (i === list.length - 1 ? 'disabled' : '') + '>↓</button>' +
+    '<button class="delX" onclick="' + removeFnName + '(\'' + safe + '\')">削除</button></div>';
 }).join('');
 }
 function renderClientOtherLists() {
-renderChips('clientWorkerChips', collectorList, 'removeWorkerSetting');
-renderChips('clientTruckChips', truckList, 'removeTruckSetting');
-renderChips('clientShuhinChips', shuhinOptions, 'removeShuhinOption');
-renderChips('clientManifestChips', manifestTypeList, 'removeManifestTypeOption');
-renderChips('clientShukkaDestChips', shukkaDestinations, 'removeShukkaDestination');
-renderChips('clientShukkaItemChips', shukkaItemsList, 'removeShukkaItemOption');
-renderChips('clientTaskTypeChips', taskTypes, 'removeTaskType');
+renderChips('clientWorkerChips', collectorList, 'removeWorkerSetting', 'collectorList');
+renderChips('clientTruckChips', truckList, 'removeTruckSetting', 'truckList');
+renderChips('clientShuhinChips', shuhinOptions, 'removeShuhinOption', 'shuhinOptions');
+renderChips('clientManifestChips', manifestTypeList, 'removeManifestTypeOption', 'manifestTypes');
+renderChips('clientShukkaDestChips', shukkaDestinations, 'removeShukkaDestination', 'shukkaDestinations');
+renderChips('clientShukkaItemChips', shukkaItemsList, 'removeShukkaItemOption', 'shukkaItems');
+renderChips('clientTaskTypeChips', taskTypes, 'removeTaskType', 'taskTypes');
 }
 function addWorkerFromClientTab() {
 const input = document.getElementById('newClientWorkerInput');
@@ -1841,7 +1889,7 @@ if (!collectorList.length) {
 }
 const bentoLabels = {rice: 'お弁当', side: 'おかずのみ', noodle: '麺', shellfish_no: '甲殻類不可'};
 const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
-wDiv.innerHTML = collectorList.map(name => {
+wDiv.innerHTML = collectorList.map((name, i) => {
   const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
   const safe = name.replace(/'/g,"\\'");
   const currentTeam = (boardAttendanceData[name] && boardAttendanceData[name].team) || null;
@@ -1851,7 +1899,11 @@ wDiv.innerHTML = collectorList.map(name => {
   const btns = ['rice','side','noodle','shellfish_no'].map(key =>
     '<button type="button" class="pillBtn ' + (profile.bentoType === key ? 'active' : '') + '" onclick="updateWorkerBentoType(\'' + safe + '\',\'' + key + '\')">' + bentoLabels[key] + '</button>'
   ).join('');
+  const moveBtns =
+    '<button type="button" onclick="moveChipItem(\'collectorList\',' + i + ',-1)" style="border:none;background:#eee;border-radius:6px;padding:4px 8px;font-size:14px;" ' + (i === 0 ? 'disabled' : '') + '>↑</button>' +
+    '<button type="button" onclick="moveChipItem(\'collectorList\',' + i + ',1)" style="border:none;background:#eee;border-radius:6px;padding:4px 8px;font-size:14px;" ' + (i === collectorList.length - 1 ? 'disabled' : '') + '>↓</button>';
   return '<div class="settingsRow">' +
+    moveBtns +
     '<span class="rName" style="flex:0 0 auto;">' + name + '</span>' +
     teamBtns +
     '<span class="pillDivider"></span>' +
