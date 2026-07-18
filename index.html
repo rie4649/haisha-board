@@ -105,6 +105,7 @@ textarea { resize: vertical; min-height: 50px; }
 .timeTypeRow { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .timeTypeRow button { flex: 1; min-width: 70px; padding: 12px 4px; border: 1px solid #ccc; border-radius: 8px; background: white; font-size: 14px; color: #333; }
 .timeTypeRow button.active { background: #1D3557; color: white; border-color: #1D3557; }
+#attendanceFilterRow button { flex: 0 1 auto; min-width: 0; padding: 8px 14px; }
 .searchBoxWrap { position: relative; }
 .searchSuggest { display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #eee; border-radius: 0 0 8px 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 15; max-height: 220px; overflow-y: auto; }
 .searchSuggest.show { display: block; }
@@ -187,6 +188,7 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
         <button type="button" onclick="setAttendanceTeamFilter('A')" data-filter="A">A班</button>
         <button type="button" onclick="setAttendanceTeamFilter('B')" data-filter="B">B班</button>
         <button type="button" onclick="setAttendanceTeamFilter('free')" data-filter="free">Free</button>
+        <button type="button" onclick="setAttendanceTeamFilter('part')" data-filter="part">バイト</button>
       </div>
       <div id="attendanceWorkingBox"></div>
     </div>
@@ -800,11 +802,11 @@ db.collection('haishaBoard').doc(entryId).update({status: newStatus});
 function attendanceBlockHtml(name, idx) {
 const state = boardAttendanceData[name] || {offType: 'none'};
 const labels = {none: '出勤', am_off: '午前休み', pm_off: '午後休み', full_off: '1日休み'};
-const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
+const teamLabels = {A: 'A班', B: 'B班', free: 'Free', part: 'バイト'};
 const btnClass = state.offType === 'none' ? '' : 'off';
 const btnLabel = labels[state.offType];
 const safe = name.replace(/'/g,"\\'");
-const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
+const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63', part: '#00897b'};
 const teamTag = state.team ? '<span style="background:' + teamColors[state.team] + ';color:white;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;">' + teamLabels[state.team] + '</span>' : '';
 return '<div class="attendBlock">' +
   '<div class="attendRow"><span>' + teamTag + name + '</span>' +
@@ -868,7 +870,7 @@ const filteredPresentCount = filteredEntries.filter(o => {
   const state = boardAttendanceData[o.name] || {offType: 'none'};
   return state.offType !== 'full_off';
 }).length;
-const filterLabel = attendanceTeamFilter === 'all' ? '全員' : attendanceTeamFilter === 'A' ? 'A班(+Free)' : attendanceTeamFilter === 'B' ? 'B班(+Free)' : 'Free';
+const filterLabel = attendanceTeamFilter === 'all' ? '全員' : attendanceTeamFilter === 'A' ? 'A班(+Free)' : attendanceTeamFilter === 'B' ? 'B班(+Free)' : attendanceTeamFilter === 'part' ? 'バイト' : 'Free';
 workingBox.innerHTML = '<div style="font-size:13px;color:#555;margin-bottom:6px;">' + filterLabel + ' 出勤:' + filteredPresentCount + '名 / 該当:' + filteredEntries.length + '名</div>' +
   (filteredEntries.length ? filteredEntries.map(o => attendanceBlockHtml(o.name, o.idx)).join('') : '<div style="color:#999;font-size:13px;">該当者がいません</div>');
 if (!fullOff.length && !amOff.length && !pmOff.length) {
@@ -894,7 +896,7 @@ const sideNames = [];
 collectorList.forEach(name => {
   if (!matchesTeamFilter(name)) return;
   const state = boardAttendanceData[name] || {offType: 'none'};
-  if (state.offType === 'full_off') return;
+  if (state.offType !== 'none') return;
   const profile = workerProfiles[name];
   if (profile && profile.bentoType === 'none') return;
   total++;
@@ -904,7 +906,7 @@ collectorList.forEach(name => {
   else if (profile.bentoType === 'side') { side++; sideNames.push(name); }
   else if (profile.bentoType === 'shellfish_no') { shellfishNo++; shellfishNames.push(name); }
 });
-const bentoFilterLabel = attendanceTeamFilter === 'all' ? '' : (attendanceTeamFilter === 'A' ? 'A班(+Free)の' : attendanceTeamFilter === 'B' ? 'B班(+Free)の' : 'Freeの');
+const bentoFilterLabel = attendanceTeamFilter === 'all' ? '' : (attendanceTeamFilter === 'A' ? 'A班(+Free)の' : attendanceTeamFilter === 'B' ? 'B班(+Free)の' : attendanceTeamFilter === 'part' ? 'バイトの' : 'Freeの');
 let html = bentoFilterLabel ? '<div class="bentoMiniSub" style="font-weight:bold;color:#1D3557;">' + bentoFilterLabel + '集計</div>' : '';
 html += '<div class="bentoMiniSub">お弁当:' + rice + '個</div>';
 html += '<div class="bentoMiniSub">おかずのみ:' + side + '個</div>';
@@ -1476,18 +1478,50 @@ const data = {
   etcUse: selectedEtc,
   etcCount: selectedEtc === 'あり' ? document.getElementById('etcCountInput').value : ''
 };
-const editId = document.getElementById('editEntryId').value;
-if (editId) {
-  db.collection('haishaBoard').doc(editId).update(data)
-    .then(() => closeModal('entryModal'))
-    .catch(err => alert('保存に失敗しました: ' + err.message));
+
+function finalizeSaveEntry() {
+  const editId = document.getElementById('editEntryId').value;
+  if (editId) {
+    db.collection('haishaBoard').doc(editId).update(data)
+      .then(() => closeModal('entryModal'))
+      .catch(err => alert('保存に失敗しました: ' + err.message));
+  } else {
+    data.status = 'pending';
+    data.createdAtMs = Date.now();
+    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    db.collection('haishaBoard').add(data)
+      .then(() => closeModal('entryModal'))
+      .catch(err => alert('保存に失敗しました: ' + err.message));
+  }
+}
+
+if (!data.companyId) {
+  const source = selectedEntryListType === 'jomu' ? clientsJomu : clients;
+  const existing = source.find(c => c.name === companyName);
+  if (existing) {
+    data.companyId = existing.id;
+    finalizeSaveEntry();
+  } else {
+    const collectionName = selectedEntryListType === 'jomu' ? 'haishaClientsJomu' : 'haishaClients';
+    db.collection(collectionName).add({
+      name: companyName,
+      yomigana: '',
+      address: data.pickupPlace || '',
+      contactName: '',
+      contactPhone: data.phone || '',
+      shuhinSelected: [],
+      items: {flecon: 0, anaAkiDrum: 0, anaNashiDrum: 0, box: 0},
+      etcUse: 'なし', etcCount: '',
+      manifestHas: 'なし', manifestDigital: false, manifestTypeSelected: [],
+      notes: '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(docRef => {
+      data.companyId = docRef.id;
+      finalizeSaveEntry();
+    }).catch(err => alert('取引先の自動登録に失敗しました: ' + err.message));
+  }
 } else {
-  data.status = 'pending';
-  data.createdAtMs = Date.now();
-  data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-  db.collection('haishaBoard').add(data)
-    .then(() => closeModal('entryModal'))
-    .catch(err => alert('保存に失敗しました: ' + err.message));
+  finalizeSaveEntry();
 }
 }
 function deleteEntry() {
@@ -2016,13 +2050,13 @@ if (!collectorList.length) {
   return;
 }
 const bentoLabels = {rice: 'お弁当', side: 'おかずのみ', noodle: '麺', shellfish_no: '甲殻類不可', none: '不要'};
-const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
+const teamLabels = {A: 'A班', B: 'B班', free: 'Free', part: 'バイト'};
 wDiv.innerHTML = collectorList.map((name, i) => {
   const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
   const safe = name.replace(/'/g,"\\'");
   const currentTeam = (boardAttendanceData[name] && boardAttendanceData[name].team) || null;
-  const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
-  const teamBtns = ['A','B','free'].map(t =>
+  const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63', part: '#00897b'};
+  const teamBtns = ['A','B','free','part'].map(t =>
     '<button type="button" class="pillBtn" style="' + (currentTeam === t ? 'background:' + teamColors[t] + ';color:white;border-color:' + teamColors[t] + ';' : '') + '" onclick="assignWorkerTeam(\'' + safe + '\',\'' + t + '\')">' + teamLabels[t] + '</button>'
   ).join('');
   const btns = ['rice','side','noodle','shellfish_no','none'].map(key =>
@@ -2055,7 +2089,9 @@ db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newPro
 }
 function updateWorkerBentoType(name, bentoType) { updateWorkerProfileField(name, 'bentoType', bentoType); }
 function assignWorkerTeam(name, team) {
-const merged = Object.assign({}, boardAttendanceData, {[name]: {offType: 'none', team}});
+const existing = boardAttendanceData[name] || {};
+const newTeam = existing.team === team ? null : team;
+const merged = Object.assign({}, boardAttendanceData, {[name]: {offType: 'none', team: newTeam}});
 db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true});
 }
 function removeWorkerSetting(name) {
