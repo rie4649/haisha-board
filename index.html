@@ -53,16 +53,23 @@ header h1 { margin: 0; font-size: 18px; }
 .sideBox { background: white; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
 .sideBox h4 { margin: 0 0 8px; font-size: 14px; color: #1D3557; display: flex; justify-content: space-between; align-items: center; }
 .miniAddBtn { border: none; background: #1D3557; color: white; border-radius: 6px; padding: 4px 10px; font-size: 12px; }
-.attendRow { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
-.attendRow:last-child { border-bottom: none; }
-.attendRow .callBtn { background: #2e7d32; color: white; border: none; border-radius: 6px; padding: 3px 9px; font-size: 12px; text-decoration: none; }
+.attendBlock { padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+.attendBlock:last-child { border-bottom: none; }
+.attendRow { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+.miniOffBtn { border: none; border-radius: 6px; padding: 3px 9px; font-size: 11px; background: #eee; color: #333; }
+.miniOffBtn.off { background: #ffcdd2; color: #b71c1c; }
+.offSelectorRow { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.offSelectorRow button { flex: 1; min-width: 56px; padding: 5px 2px; border: 1px solid #ccc; border-radius: 6px; background: white; font-size: 11px; }
+.offSelectorRow button.active { background: #1D3557; color: white; border-color: #1D3557; }
 .offSummaryLine { font-size: 13px; color: #555; margin-top: 4px; }
+.bentoMiniBig { font-size: 20px; font-weight: bold; color: #1D3557; }
+.bentoMiniSub { font-size: 12px; color: #555; margin-top: 4px; }
+.copyBtnSmall { width: 100%; margin-top: 8px; padding: 6px; border: 1px solid #1D3557; background: white; color: #1D3557; border-radius: 6px; font-size: 12px; }
 .shukkaItem { font-size: 13px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
 .shukkaItem:last-child { border-bottom: none; }
 .shukkaStatusBtn { border: none; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: bold; margin-right: 6px; }
 .shukkaStatusBtn.pending { background: #ffcdd2; color: #b71c1c; }
 .shukkaStatusBtn.done { background: #c8e6c9; color: #256029; }
-.earlyTag { background: #ff9800; color: white; font-size: 11px; padding: 2px 6px; border-radius: 8px; margin-left: 6px; }
 
 .boardList { padding: 10px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 620px) { .boardList { grid-template-columns: 1fr; } }
@@ -91,7 +98,7 @@ header h1 { margin: 0; font-size: 18px; }
 .sheet h2 { margin-top: 0; font-size: 17px; }
 .closeBtn { text-align: right; font-size: 14px; color: #666; margin-bottom: 6px; }
 label { display: block; font-size: 13px; color: #555; margin: 14px 0 4px; }
-input[type=text], input[type=tel], input[type=time], input[type=date], textarea, select {
+input[type=text], input[type=tel], input[type=time], input[type=date], input[type=number], textarea, select {
   width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px;
 }
 textarea { resize: vertical; min-height: 50px; }
@@ -102,12 +109,11 @@ textarea { resize: vertical; min-height: 50px; }
 .searchSuggest { display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #eee; border-radius: 0 0 8px 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 15; max-height: 220px; overflow-y: auto; }
 .searchSuggest.show { display: block; }
 .searchSuggest .sItem { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #eee; }
-.locSelectWrap { margin-top: 8px; }
 .shuhinToggle { width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; background: white; font-size: 15px; color: #222; }
 .shuhinPanel { margin-top: 8px; border: 1px solid #eee; border-radius: 8px; padding: 10px; background: #fafafa; max-height: 200px; overflow-y: auto; display: none; }
 .checkrow { display: flex; gap: 16px; flex-wrap: wrap; }
 .checkrow label { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 15px; color: #222; }
-.addRow { display: flex; gap: 8px; margin-top: 8px; }
+.addRow { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
 .addRow input { flex: 1; }
 .addRow button { padding: 10px 16px; border: none; border-radius: 8px; background: #1D3557; color: white; white-space: nowrap; }
 .btnrow { display: flex; gap: 10px; margin-top: 20px; }
@@ -119,34 +125,17 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 .detailRow { margin-bottom: 10px; font-size: 15px; }
 .detailRow .label { color: #888; font-size: 12px; }
 
-/* 弁当タブ */
-.bentoSummary { margin: 12px 16px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-.bentoSummary .big { font-size: 26px; font-weight: bold; color: #1D3557; }
-.bentoSummary .sub { font-size: 14px; color: #555; margin-top: 6px; }
-.bentoSummary .warn { font-size: 13px; color: #c0392b; margin-top: 8px; }
-.copyBtn { width: 100%; margin-top: 10px; padding: 10px; border: 1px solid #1D3557; background: white; color: #1D3557; border-radius: 8px; font-size: 14px; }
-.workerList { padding: 0 16px 40px; }
-.workerCard { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-.workerCard .wName { font-size: 16px; font-weight: bold; color: #1D3557; }
-.wTags { display: inline-flex; gap: 6px; margin-left: 8px; }
-.wTag { font-size: 11px; background: #eef0f3; color: #555; padding: 2px 7px; border-radius: 10px; }
-.offTypeRow { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-.offTypeRow button { flex: 1; min-width: 70px; padding: 9px 4px; border: 1px solid #ccc; border-radius: 8px; background: white; font-size: 13px; color: #333; }
-.offTypeRow button.active { background: #1D3557; color: white; border-color: #1D3557; }
-.needBentoRow { margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 14px; }
-
-/* 設定タブ */
+/* 設定・取引先一覧 共通 */
 .settingsSection { padding: 16px; }
 .settingsSection h3 { color: #1D3557; margin-bottom: 8px; }
+.settingsSection h4 { margin: 0 0 6px; }
 .infoBox { background: #eef4ff; border-radius: 10px; padding: 12px 14px; font-size: 14px; color: #333; margin-bottom: 16px; }
-.infoBox button { margin-top: 8px; width: 100%; padding: 10px; border: none; border-radius: 8px; background: #1D3557; color: white; font-size: 14px; }
 .settingsRow { display: flex; align-items: center; gap: 8px; background: white; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); flex-wrap: wrap; }
-.settingsRow.earlyRow { background: #fff3e0; }
 .settingsRow .rName { font-weight: bold; flex: 1; min-width: 80px; }
 .settingsRow select { width: auto; padding: 6px 8px; font-size: 13px; }
-.settingsRow input[type=tel] { width: 120px; padding: 6px 8px; font-size: 13px; }
 .settingsRow .delX { color: #c0392b; border: 1px solid #c0392b; border-radius: 6px; padding: 4px 10px; font-size: 12px; background: white; }
 .settingsRow label.inlineChk { display: flex; align-items: center; gap: 4px; font-size: 13px; margin: 0; white-space: nowrap; }
+.clientListArea { padding: 12px 16px 0; }
 </style>
 </head>
 <body>
@@ -160,7 +149,7 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 </header>
 <div class="tabBar">
   <button id="tabBtnBoard" onclick="switchMainTab('board')">🚚 配車ボード</button>
-  <button id="tabBtnBento" onclick="switchMainTab('bento')">🍱 お弁当</button>
+  <button id="tabBtnClients" onclick="switchMainTab('clients')">🏢 取引先一覧</button>
   <button id="tabBtnSettings" onclick="switchMainTab('settings')">⚙️ 設定</button>
 </div>
 </div>
@@ -177,6 +166,10 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div class="dateNav">
     <button class="todayBtn" onclick="goToday()">📍 今日に戻る</button>
   </div>
+  <div class="dateNav">
+    <button onclick="shareBoardToLine()">📤 LINEへ送る</button>
+    <button onclick="printBoard()">🖨 印刷/PDF</button>
+  </div>
 </div>
 <div class="boardLayout">
   <div class="boardSidebar">
@@ -185,8 +178,12 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
       <div id="attendanceWorkingBox"></div>
     </div>
     <div class="sideBox">
-      <h4>🛌 休み</h4>
+      <h4>🛌 休みまとめ</h4>
       <div id="attendanceOffBox"></div>
+    </div>
+    <div class="sideBox">
+      <h4>🍱 本日のお弁当</h4>
+      <div id="bentoMiniBox"></div>
     </div>
     <div class="sideBox">
       <h4>📦 出荷 <button class="miniAddBtn" onclick="openAddShukka()">＋追加</button></h4>
@@ -200,43 +197,38 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 <button class="fab" onclick="openAddEntry()">＋</button>
 </div>
 
-<!-- お弁当 -->
-<div class="section" id="section-bento">
-<div class="dateBar">
-  <div class="bigDate" id="bentoBigDateLabel"></div>
-  <div class="dateNav">
-    <button onclick="changeBentoDay(-1)">← 前日</button>
-    <input type="date" id="bentoDatePicker">
-    <button onclick="changeBentoDay(1)">翌日 →</button>
-  </div>
-  <div class="dateNav">
-    <button class="todayBtn" onclick="goBentoToday()">📍 今日に戻る</button>
-  </div>
+<!-- 取引先一覧 -->
+<div class="section" id="section-clients">
+<div class="clientListArea" id="clientListArea"></div>
+<div class="settingsSection">
+  <h3 style="margin-top:24px;">その他(共有マスタ)</h3>
+  <h4>作業員一覧</h4>
+  <div id="clientWorkerChips"></div>
+  <div class="addRow"><input type="text" id="newClientWorkerInput" placeholder="例:川村"><button onclick="addWorkerFromClientTab()">追加</button></div>
+
+  <h4 style="margin-top:20px;">トラック一覧</h4>
+  <div id="clientTruckChips"></div>
+  <div class="addRow"><input type="text" id="newClientTruckInput" placeholder="例:2tトラック"><button onclick="addTruckFromClientTab()">追加</button></div>
+
+  <h4 style="margin-top:20px;">回収物一覧</h4>
+  <div id="clientShuhinChips"></div>
+  <div class="addRow"><input type="text" id="newShuhinOptionInput" placeholder="例:古紙、金属くず"><button onclick="addShuhinOption()">追加</button></div>
+
+  <h4 style="margin-top:20px;">マニフェスト内容一覧</h4>
+  <div id="clientManifestChips"></div>
+  <div class="addRow"><input type="text" id="newManifestTypeOptionInput" placeholder="例:産業廃棄物管理票"><button onclick="addManifestTypeOption()">追加</button></div>
 </div>
-<div class="bentoSummary" id="bentoSummaryBox"></div>
-<div class="workerList" id="bentoWorkerList"></div>
+<button class="fab" onclick="openAddClient()">＋</button>
 </div>
 
 <!-- 設定 -->
 <div class="section" id="section-settings">
 <div class="settingsSection">
-  <div class="infoBox">
-    取引先の情報は「取引先管理」アプリのデータとそのまま連動しています(<span id="companiesCount">0</span>件を読み込み中)。取引先の追加・編集はそちらのアプリで行ってください。
-    <button onclick="window.open('https://rie4649.github.io/hikitorisaki-kanri/','_blank')">取引先管理を開く</button>
-  </div>
-
-  <h3>作業員一覧(お弁当設定・電話・早い人フラグ / 取引先管理と共有)</h3>
+  <h3>作業員一覧(お弁当設定)</h3>
   <div id="workerSettingsList"></div>
   <div class="addRow">
     <input type="text" id="newWorkerInput" placeholder="例:川村">
     <button onclick="addWorkerWithProfile()">追加</button>
-  </div>
-
-  <h3 style="margin-top:24px;">トラック一覧(取引先管理と共有)</h3>
-  <div id="truckSettingsList"></div>
-  <div class="addRow">
-    <input type="text" id="newTruckSettingInput" placeholder="例:2tトラック">
-    <button onclick="addTruckSetting()">追加</button>
   </div>
 </div>
 </div>
@@ -258,14 +250,10 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
     <input type="time" id="customTimeInput">
   </div>
 
-  <label>会社名</label>
+  <label>会社名(引取先)</label>
   <div class="searchBoxWrap">
     <input type="text" id="companyInput" placeholder="会社名を入力(取引先一覧から候補が出ます)" autocomplete="off">
     <div class="searchSuggest" id="companySuggest"></div>
-  </div>
-  <div class="locSelectWrap" id="entryLocSelectWrap" style="display:none;">
-    <label>拠点を選択</label>
-    <select id="entryLocSelect"></select>
   </div>
 
   <label>電話番号</label>
@@ -355,22 +343,81 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 </div>
 </div>
 
-<!-- 取引先詳細(読み取り専用) -->
+<!-- 取引先詳細 -->
 <div class="overlay" id="companyDetailModal">
 <div class="sheet">
   <div class="closeBtn" onclick="closeModal('companyDetailModal')">閉じる ✕</div>
   <h2 id="cdName"></h2>
-  <div class="detailRow"><div class="label">拠点</div><div id="cdLocName"></div></div>
   <div class="detailRow"><div class="label">住所</div><div id="cdAddress"></div></div>
-  <div class="detailRow"><div class="label">電話</div><div id="cdPhone"></div></div>
-  <div class="detailRow"><div class="label">取引先の担当者名</div><div id="cdClientContact"></div></div>
-  <div class="detailRow"><div class="label">取引先担当者の電話</div><div id="cdClientContactPhone"></div></div>
-  <div class="detailRow"><div class="label">担当者(社内)</div><div id="cdStaff"></div></div>
+  <div class="detailRow"><div class="label">担当者</div><div id="cdContact"></div></div>
+  <div class="detailRow"><div class="label">担当者電話</div><div id="cdContactPhone"></div></div>
+  <div class="detailRow"><div class="label">回収物</div><div id="cdShuhin"></div></div>
+  <div class="detailRow"><div class="label">持ち物</div><div id="cdItems"></div></div>
   <div class="detailRow"><div class="label">マニフェスト</div><div id="cdManifest"></div></div>
-  <div class="detailRow"><div class="label">登録トラック</div><div id="cdTrucks"></div></div>
-  <div class="detailRow"><div class="label">持ち物(登録)</div><div id="cdItems"></div></div>
-  <div class="detailRow"><div class="label">回収品</div><div id="cdShuhin"></div></div>
   <div class="detailRow"><div class="label">備考</div><div id="cdNotes"></div></div>
+  <div class="btnrow">
+    <button class="secondary" onclick="openEditClientFromDetail()">編集</button>
+  </div>
+  <div class="btnrow">
+    <button class="ghost secondary" onclick="shareClientDetailToLine()">LINEへ送る</button>
+    <button class="ghost secondary" onclick="printClientDetail()">印刷</button>
+  </div>
+</div>
+</div>
+
+<!-- 取引先 追加/編集 -->
+<div class="overlay" id="clientModal">
+<div class="sheet">
+  <div class="closeBtn" onclick="closeModal('clientModal')">閉じる ✕</div>
+  <h2 id="clientModalTitle">取引先を追加</h2>
+  <input type="hidden" id="editClientId">
+
+  <label>会社名(引取先) *</label>
+  <input type="text" id="clientNameInput">
+  <label>住所</label>
+  <input type="text" id="clientAddressInput">
+  <label>担当者</label>
+  <input type="text" id="clientContactNameInput">
+  <label>担当者電話番号</label>
+  <input type="tel" id="clientContactPhoneInput">
+
+  <label>回収物</label>
+  <div>
+    <button type="button" class="shuhinToggle" id="clientShuhinToggleBtn" onclick="toggleClientShuhinPanel()">回収物を選択 ▾</button>
+    <div class="checkrow shuhinPanel" id="clientShuhinChecks"></div>
+    <div class="addRow">
+      <input type="text" id="clientShuhinQuickInput" placeholder="候補にない回収物を追加">
+      <button type="button" onclick="quickAddClientShuhin()">追加</button>
+    </div>
+  </div>
+
+  <label>持ち物</label>
+  <div class="addRow"><span style="flex:1;">フレコン(枚)</span><input type="number" id="clientQtyFlecon" style="width:90px;" min="0"></div>
+  <div class="addRow"><span style="flex:1;">ドラム穴あり(本)</span><input type="number" id="clientQtyAnaAki" style="width:90px;" min="0"></div>
+  <div class="addRow"><span style="flex:1;">ドラム穴なし(本)</span><input type="number" id="clientQtyAnaNashi" style="width:90px;" min="0"></div>
+  <div class="addRow"><span style="flex:1;">箱(個)</span><input type="number" id="clientQtyBox" style="width:90px;" min="0"></div>
+
+  <label>マニフェスト</label>
+  <div class="timeTypeRow">
+    <button type="button" id="clientManifestNashi" onclick="selectClientManifest('なし')">なし</button>
+    <button type="button" id="clientManifestAri" onclick="selectClientManifest('あり')">あり</button>
+  </div>
+  <div id="clientManifestDigitalWrap" style="display:none;">
+    <label class="inlineChk" style="display:flex;align-items:center;gap:6px;font-size:14px;margin-top:10px;">
+      <input type="checkbox" id="clientManifestDigitalInput"> 電子マニフェスト対応
+    </label>
+  </div>
+
+  <label>備考</label>
+  <textarea id="clientNotesInput"></textarea>
+
+  <div class="btnrow">
+    <button class="secondary" onclick="closeModal('clientModal')">キャンセル</button>
+    <button class="primary" onclick="saveClient()">保存</button>
+  </div>
+  <div class="btnrow" id="deleteClientRow" style="display:none;">
+    <button class="danger" onclick="deleteClient()">この取引先を削除</button>
+  </div>
 </div>
 </div>
 
@@ -402,70 +449,77 @@ if (deferredInstallPrompt) {
 });
 window.addEventListener('appinstalled', () => { installBtn.style.display = 'none'; });
 
-let companies = [];
+let clients = [];
 let truckList = [];
 let collectorList = [];
+let shuhinOptions = [];
+let manifestTypeList = [];
 let workerProfiles = {};
 let boardEntries = [];
 let shukkaEntries = [];
 let currentDate = todayStr();
-let bentoDate = todayStr();
-let bentoDailyData = {};
 let boardAttendanceData = {};
 let boardUnsub = null;
-let bentoUnsub = null;
 let boardAttendanceUnsub = null;
 let shukkaUnsub = null;
 let activeMainTab = 'board';
+let currentDetailClientId = null;
 
 function todayStr() {
 const d = new Date();
 return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
-function newId() { return 'e_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function arrLabel(list) { return (list && list.length) ? list.join('・') : ''; }
-function defaultProfile() { return {bentoType: 'rice', shellfish: false, phone: '', earlyReturn: false}; }
+function defaultProfile() { return {bentoType: 'rice', shellfish: false}; }
+function itemsLabelFor(items) {
+if (!items) return 'なし';
+const parts = [];
+if (items.flecon) parts.push('フレコン' + items.flecon + '枚');
+if (items.anaAkiDrum) parts.push('穴ありドラム' + items.anaAkiDrum + '本');
+if (items.anaNashiDrum) parts.push('穴なしドラム' + items.anaNashiDrum + '本');
+if (items.box) parts.push('箱' + items.box + '個');
+return parts.length ? parts.join('・') : 'なし';
+}
 
 function switchMainTab(tab) {
 activeMainTab = tab;
-['board','bento','settings'].forEach(t => {
+['board','clients','settings'].forEach(t => {
   document.getElementById('section-' + t).classList.toggle('active', t === tab);
   document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === tab);
 });
-const titles = {board: '🚚 配車ボード', bento: '🍱 お弁当管理', settings: '⚙️ 設定'};
+const titles = {board: '🚚 配車ボード', clients: '🏢 取引先一覧', settings: '⚙️ 設定'};
 document.getElementById('headerTitle').textContent = titles[tab];
-if (tab === 'bento') renderBentoSummaryAndList();
+if (tab === 'clients') { renderClientList(); renderClientOtherLists(); }
 if (tab === 'settings') renderSettingsLists();
 }
 
-db.collection('companies').orderBy('name').onSnapshot(snapshot => {
-companies = [];
-snapshot.forEach(doc => companies.push({id: doc.id, ...doc.data()}));
-document.getElementById('companiesCount').textContent = companies.length;
+db.collection('haishaClients').orderBy('name').onSnapshot(snapshot => {
+clients = [];
+snapshot.forEach(doc => clients.push({id: doc.id, ...doc.data()}));
+renderClientList();
 });
 function subscribeList(docName, setter) {
 db.collection('pickupSettings').doc(docName).onSnapshot(doc => {
   setter((doc.exists && doc.data().names) ? doc.data().names : []);
   renderAttendanceBoxes();
-  if (activeMainTab === 'bento') renderBentoSummaryAndList();
+  renderClientOtherLists();
   if (activeMainTab === 'settings') renderSettingsLists();
 });
 }
 subscribeList('truckList', v => truckList = v);
 subscribeList('collectorList', v => collectorList = v);
+subscribeList('shuhinOptions', v => shuhinOptions = v);
+subscribeList('manifestTypes', v => manifestTypeList = v);
 db.collection('pickupSettings').doc('workerBentoProfiles').onSnapshot(doc => {
 workerProfiles = (doc.exists && doc.data().profiles) ? doc.data().profiles : {};
 renderAttendanceBoxes();
-if (activeMainTab === 'bento') renderBentoSummaryAndList();
 if (activeMainTab === 'settings') renderSettingsLists();
 });
 
 function companyMatchesKeyword(c, keyword) {
 const kw = keyword.trim().toLowerCase();
 if (!kw) return false;
-if ((c.name || '').toLowerCase().includes(kw)) return true;
-if ((c.yomigana || '').includes(keyword.trim())) return true;
-return false;
+return (c.name || '').toLowerCase().includes(kw);
 }
 
 const WEEKDAYS = ['日','月','火','水','木','金','土'];
@@ -550,44 +604,98 @@ const newStatus = (e.status === 'done') ? 'pending' : 'done';
 db.collection('haishaBoard').doc(entryId).update({status: newStatus});
 }
 
-// ---- 出勤者/休み サイドボックス ----
-function attendanceRowHtml(name) {
-const profile = workerProfiles[name] || {};
+// ---- 出勤者/休み/お弁当 サイドボックス ----
+function attendanceBlockHtml(name, idx) {
 const state = boardAttendanceData[name] || {offType: 'none'};
-let tag = '';
-if (state.offType === 'am_off') tag = ' <span style="color:#a85c00;font-size:11px;">(午前休み)</span>';
-if (state.offType === 'pm_off') tag = ' <span style="color:#1d3f8f;font-size:11px;">(午後休み)</span>';
-const early = profile.earlyReturn ? '<span class="earlyTag">早</span>' : '';
-const call = profile.phone ? '<a class="callBtn" href="tel:' + profile.phone + '">📞</a>' : '';
-return '<div class="attendRow"><span>' + name + tag + early + '</span>' + call + '</div>';
+const labels = {none: '出勤', am_off: '午前休み', pm_off: '午後休み', full_off: '1日休み'};
+const btnClass = state.offType === 'none' ? '' : 'off';
+const btnLabel = state.offType === 'none' ? '休み' : labels[state.offType];
+return '<div class="attendBlock">' +
+  '<div class="attendRow"><span>' + name + '</span>' +
+  '<button class="miniOffBtn ' + btnClass + '" onclick="toggleOffSelector(' + idx + ')">' + btnLabel + '</button></div>' +
+  '<div class="offSelectorRow" id="offSel_' + idx + '" style="display:none;">' +
+    ['none','am_off','pm_off','full_off'].map(key =>
+      '<button type="button" class="' + (state.offType === key ? 'active' : '') + '" onclick="setWorkerOffTypeAndCollapse(\'' + name.replace(/'/g,"\\'") + '\',\'' + key + '\',' + idx + ')">' + labels[key] + '</button>'
+    ).join('') +
+  '</div>' +
+'</div>';
+}
+function toggleOffSelector(idx) {
+const el = document.getElementById('offSel_' + idx);
+if (!el) return;
+el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
+}
+function setWorkerOffTypeAndCollapse(name, offType, idx) {
+const merged = Object.assign({}, boardAttendanceData, {[name]: {offType}});
+db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true});
+const el = document.getElementById('offSel_' + idx);
+if (el) el.style.display = 'none';
 }
 function renderAttendanceBoxes() {
 const workingBox = document.getElementById('attendanceWorkingBox');
 const offBox = document.getElementById('attendanceOffBox');
-if (!workingBox || !offBox) return;
+if (!workingBox || !offBox) { renderBentoMiniBox(); return; }
 if (!collectorList.length) {
-  workingBox.innerHTML = '<div style="color:#999;font-size:13px;">作業員未登録です</div>';
+  workingBox.innerHTML = '<div style="color:#999;font-size:13px;">作業員未登録です(設定タブから登録できます)</div>';
   offBox.innerHTML = '';
+  renderBentoMiniBox();
   return;
 }
-const present = [], amOff = [], pmOff = [], fullOff = [];
+let presentCount = 0;
+const amOff = [], pmOff = [], fullOff = [];
 collectorList.forEach(name => {
   const state = boardAttendanceData[name] || {offType: 'none'};
-  if (state.offType === 'full_off') { fullOff.push(name); return; }
-  present.push(name);
+  if (state.offType === 'full_off') fullOff.push(name); else presentCount++;
   if (state.offType === 'am_off') amOff.push(name);
   if (state.offType === 'pm_off') pmOff.push(name);
 });
-workingBox.innerHTML = present.length ? present.map(attendanceRowHtml).join('') : '<div style="color:#999;font-size:13px;">本日出勤者なし</div>';
-let offHtml = '';
+workingBox.innerHTML = '<div style="font-size:13px;color:#555;margin-bottom:6px;">出勤:' + presentCount + '名 / 全体:' + collectorList.length + '名</div>' +
+  collectorList.map((name, idx) => attendanceBlockHtml(name, idx)).join('');
 if (!fullOff.length && !amOff.length && !pmOff.length) {
-  offHtml = '<div style="color:#999;font-size:13px;">本日休みの人はいません</div>';
+  offBox.innerHTML = '<div style="color:#999;font-size:13px;">本日休みの人はいません</div>';
 } else {
+  let offHtml = '';
   if (fullOff.length) offHtml += '<div class="offSummaryLine">1日休み(' + fullOff.length + '名):' + fullOff.join('・') + '</div>';
   if (amOff.length) offHtml += '<div class="offSummaryLine">午前休み(' + amOff.length + '名):' + amOff.join('・') + '</div>';
   if (pmOff.length) offHtml += '<div class="offSummaryLine">午後休み(' + pmOff.length + '名):' + pmOff.join('・') + '</div>';
+  offBox.innerHTML = offHtml;
 }
-offBox.innerHTML = offHtml;
+renderBentoMiniBox();
+}
+let lastBentoMiniSummary = {total: 0, rice: 0, noodle: 0, side: 0, shellfishNames: []};
+function renderBentoMiniBox() {
+const box = document.getElementById('bentoMiniBox');
+if (!box) return;
+if (!collectorList.length) { box.innerHTML = '<div style="color:#999;font-size:13px;">作業員未登録です</div>'; return; }
+let total = 0, rice = 0, noodle = 0, side = 0, unset = 0;
+const shellfishNames = [];
+collectorList.forEach(name => {
+  const state = boardAttendanceData[name] || {offType: 'none'};
+  if (state.offType === 'full_off') return;
+  total++;
+  const profile = workerProfiles[name];
+  if (!profile || !profile.bentoType) { unset++; return; }
+  if (profile.bentoType === 'rice') rice++;
+  else if (profile.bentoType === 'noodle') noodle++;
+  else if (profile.bentoType === 'side') side++;
+  if (profile.shellfish) shellfishNames.push(name);
+});
+let html = '<div class="bentoMiniBig">合計 ' + total + '個</div>';
+html += '<div class="bentoMiniSub">お弁当' + rice + '・おかずのみ' + side + '・麺' + noodle + (unset ? '・未設定' + unset : '') + '</div>';
+if (shellfishNames.length) html += '<div class="bentoMiniSub" style="color:#c0392b;">甲殻類不可:' + shellfishNames.length + '(' + shellfishNames.join('・') + ')</div>';
+html += '<button class="copyBtnSmall" onclick="copyBentoMiniSummary()">この内容をコピー</button>';
+box.innerHTML = html;
+lastBentoMiniSummary = {total, rice, noodle, side, shellfishNames};
+}
+function copyBentoMiniSummary() {
+const {total, rice, noodle, side, shellfishNames} = lastBentoMiniSummary;
+let text = formatBigDate(currentDate) + ' のお弁当\n合計:' + total + '個\nお弁当:' + rice + '個\nおかずのみ:' + side + '個\n甲殻類不可:' + shellfishNames.length + '個\n麺:' + noodle + '個';
+if (shellfishNames.length) text += '\n(甲殻類不可の人:' + shellfishNames.join('・') + ')';
+if (navigator.clipboard && navigator.clipboard.writeText) {
+  navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(() => prompt('コピーしてください', text));
+} else {
+  prompt('コピーしてください', text);
+}
 }
 
 // ---- 出荷 サイドボックス ----
@@ -656,16 +764,16 @@ function renderShukkaCompanySuggest() {
 const keyword = shukkaCompanyInput.value.trim();
 const box = document.getElementById('shukkaCompanySuggest');
 if (!keyword) { box.classList.remove('show'); return; }
-const matches = companies.filter(c => companyMatchesKeyword(c, keyword)).slice(0, 8);
+const matches = clients.filter(c => companyMatchesKeyword(c, keyword)).slice(0, 8);
 if (!matches.length) { box.classList.remove('show'); return; }
 box.innerHTML = matches.map(c => '<div class="sItem" onclick="selectShukkaCompanySuggest(\'' + c.id + '\')">' + c.name + '</div>').join('');
 box.classList.add('show');
 }
-function selectShukkaCompanySuggest(companyId) {
-const c = companies.find(x => x.id === companyId);
+function selectShukkaCompanySuggest(clientId) {
+const c = clients.find(x => x.id === clientId);
 if (!c) return;
 shukkaCompanyInput.value = c.name;
-selectedShukkaCompanyId = companyId;
+selectedShukkaCompanyId = clientId;
 document.getElementById('shukkaCompanySuggest').classList.remove('show');
 }
 const shukkaTruckInput = document.getElementById('shukkaTruckInput');
@@ -722,40 +830,75 @@ db.collection('shukkaBoard').doc(editId).delete()
   .catch(err => alert('削除に失敗しました: ' + err.message));
 }
 
-// ---- 会社詳細(読み取り専用) ----
-function manifestLabelFor(c) {
-if (!c || c.manifestHas !== 'あり') return 'なし';
-const parts = ['あり'];
-if (c.manifestType && c.manifestType.length) parts.push(c.manifestType.join('・'));
-return parts.join(' / ');
-}
-function itemsLabelFor(items) {
-if (!items) return 'なし';
-const parts = [];
-if (items.anaAkiDrum) parts.push('穴あきドラム' + items.anaAkiDrum + '本');
-if (items.anaNashiDrum) parts.push('穴なしドラム' + items.anaNashiDrum + '本');
-if (items.flecon) parts.push('フレコン' + items.flecon + '枚');
-if (items.box) parts.push('箱' + items.box + '個');
-if (items.otherText) parts.push(items.otherText);
-return parts.length ? parts.join('・') : 'なし';
-}
-function showCompanyDetail(companyId) {
-const c = companies.find(x => x.id === companyId);
-if (!c) { alert('取引先一覧の情報が見つかりませんでした'); return; }
-const loc = (c.locations || [])[0] || {};
+// ---- 取引先詳細 ----
+function showCompanyDetail(clientId) {
+const c = clients.find(x => x.id === clientId);
+if (!c) { alert('取引先の情報が見つかりませんでした'); return; }
+currentDetailClientId = clientId;
 document.getElementById('cdName').textContent = c.name;
-document.getElementById('cdLocName').textContent = loc.locationName || 'なし';
-document.getElementById('cdAddress').textContent = loc.address || 'なし';
-document.getElementById('cdPhone').textContent = loc.phone || 'なし';
-document.getElementById('cdClientContact').textContent = c.clientContact || 'なし';
-document.getElementById('cdClientContactPhone').textContent = c.clientContactPhone || 'なし';
-document.getElementById('cdStaff').textContent = c.staff || 'なし';
-document.getElementById('cdManifest').textContent = manifestLabelFor(c);
-document.getElementById('cdTrucks').textContent = arrLabel(c.trucks) || 'なし';
-document.getElementById('cdItems').textContent = itemsLabelFor(c.items);
+document.getElementById('cdAddress').textContent = c.address || 'なし';
+document.getElementById('cdContact').textContent = c.contactName || 'なし';
+document.getElementById('cdContactPhone').textContent = c.contactPhone || 'なし';
 document.getElementById('cdShuhin').textContent = arrLabel(c.shuhinSelected) || 'なし';
+document.getElementById('cdItems').textContent = itemsLabelFor(c.items);
+document.getElementById('cdManifest').textContent = c.manifestHas === 'あり' ? ('あり' + (c.manifestDigital ? '(電子マニフェスト対応)' : '')) : 'なし';
 document.getElementById('cdNotes').textContent = c.notes || 'なし';
 document.getElementById('companyDetailModal').classList.add('show');
+}
+function openEditClientFromDetail() {
+if (!currentDetailClientId) return;
+closeModal('companyDetailModal');
+switchMainTab('clients');
+openEditClient(currentDetailClientId);
+}
+function buildClientShareText(c) {
+return '【取引先情報】\n会社名:' + (c.name || '') +
+  '\n住所:' + (c.address || 'なし') +
+  '\n担当者:' + (c.contactName || 'なし') +
+  '\n担当者電話:' + (c.contactPhone || 'なし') +
+  '\n回収物:' + (arrLabel(c.shuhinSelected) || 'なし') +
+  '\n持ち物:' + itemsLabelFor(c.items) +
+  '\nマニフェスト:' + (c.manifestHas === 'あり' ? ('あり' + (c.manifestDigital ? '(電子対応)' : '')) : 'なし') +
+  '\n備考:' + (c.notes || 'なし');
+}
+function shareClientDetailToLine() {
+const c = clients.find(x => x.id === currentDetailClientId);
+if (!c) return;
+const text = buildClientShareText(c);
+const lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(text);
+const w = window.open('', '_blank');
+w.document.write(
+  '<html><head><meta charset="UTF-8"><title>LINEへ送る</title>' +
+  '<style>body{font-family:sans-serif;padding:24px;background:#f5f5f5;} pre{white-space:pre-wrap;background:white;padding:14px;border-radius:8px;font-size:14px;border:1px solid #ddd;}' +
+  'a.btn{display:block;text-align:center;background:#06C755;color:white;padding:14px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:16px;}' +
+  'button.closeBtn2{width:100%;padding:14px;border:none;border-radius:8px;background:#eee;color:#333;font-size:15px;margin-top:10px;}</style></head><body>' +
+  '<h2>LINEへ送る内容</h2><pre>' + text.replace(/</g,'&lt;') + '</pre>' +
+  '<a class="btn" href="' + lineUrl + '">LINEを開く</a>' +
+  '<button class="closeBtn2" onclick="window.close()">このページを閉じる</button></body></html>'
+);
+w.document.close();
+}
+function printClientDetail() {
+const c = clients.find(x => x.id === currentDetailClientId);
+if (!c) return;
+const w = window.open('', '_blank');
+w.document.write(
+  '<html><head><meta charset="UTF-8"><title>' + c.name + '</title>' +
+  '<style>body{font-family:sans-serif;padding:30px;} h1{border-bottom:2px solid #1D3557;padding-bottom:8px;}' +
+  'table{border-collapse:collapse;width:100%;margin-top:16px;} td{border:1px solid #ccc;padding:8px 12px;font-size:14px;}' +
+  'td.label{background:#f0f0f0;width:160px;font-weight:bold;}</style></head><body>' +
+  '<h1>' + c.name + '</h1><table>' +
+  '<tr><td class="label">住所</td><td>' + (c.address || '') + '</td></tr>' +
+  '<tr><td class="label">担当者</td><td>' + (c.contactName || '') + '</td></tr>' +
+  '<tr><td class="label">担当者電話</td><td>' + (c.contactPhone || '') + '</td></tr>' +
+  '<tr><td class="label">回収物</td><td>' + arrLabel(c.shuhinSelected) + '</td></tr>' +
+  '<tr><td class="label">持ち物</td><td>' + itemsLabelFor(c.items) + '</td></tr>' +
+  '<tr><td class="label">マニフェスト</td><td>' + (c.manifestHas === 'あり' ? ('あり' + (c.manifestDigital ? '(電子対応)' : '')) : 'なし') + '</td></tr>' +
+  '<tr><td class="label">備考</td><td>' + (c.notes || '') + '</td></tr>' +
+  '</table><button onclick="window.close()" style="width:100%;padding:14px;border:none;border-radius:8px;background:#eee;color:#333;font-size:15px;margin-top:16px;">閉じる</button>' +
+  '<scr' + 'ipt>window.print();<\/scr' + 'ipt></body></html>'
+);
+w.document.close();
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
@@ -763,7 +906,6 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 // ---- 追加/編集モーダル(配車) ----
 let selectedTimeType = 'am';
 let selectedCompanyId = null;
-let selectedLocId = null;
 let selectedEtc = 'なし';
 
 function selectTimeType(t) {
@@ -788,8 +930,7 @@ selectedTimeType = 'am';
 selectTimeType('am');
 document.getElementById('customTimeInput').value = '';
 document.getElementById('companyInput').value = '';
-selectedCompanyId = null; selectedLocId = null;
-document.getElementById('entryLocSelectWrap').style.display = 'none';
+selectedCompanyId = null;
 document.getElementById('phoneInput').value = '';
 document.getElementById('pickupPlaceInput').value = '';
 document.getElementById('truckInput').value = '';
@@ -812,8 +953,6 @@ selectTimeType(selectedTimeType);
 document.getElementById('customTimeInput').value = e.customTime || '';
 document.getElementById('companyInput').value = e.companyName || '';
 selectedCompanyId = e.companyId || null;
-selectedLocId = e.locationId || null;
-document.getElementById('entryLocSelectWrap').style.display = 'none';
 document.getElementById('phoneInput').value = e.phone || '';
 document.getElementById('pickupPlaceInput').value = e.pickupPlace || '';
 document.getElementById('truckInput').value = e.truck || '';
@@ -860,13 +999,9 @@ if (!workerProfiles[name]) {
 }
 }
 
-// 会社名 入力候補
+// 会社名 入力候補(配車)
 const companyInput = document.getElementById('companyInput');
-companyInput.addEventListener('input', () => {
-selectedCompanyId = null; selectedLocId = null;
-document.getElementById('entryLocSelectWrap').style.display = 'none';
-renderCompanySuggest();
-});
+companyInput.addEventListener('input', () => { selectedCompanyId = null; renderCompanySuggest(); });
 document.addEventListener('click', (e) => {
 if (!e.target.closest('#companyInput') && !e.target.closest('#companySuggest')) {
   document.getElementById('companySuggest').classList.remove('show');
@@ -879,39 +1014,21 @@ function renderCompanySuggest() {
 const keyword = companyInput.value.trim();
 const box = document.getElementById('companySuggest');
 if (!keyword) { box.classList.remove('show'); return; }
-const matches = companies.filter(c => companyMatchesKeyword(c, keyword)).slice(0, 8);
+const matches = clients.filter(c => companyMatchesKeyword(c, keyword)).slice(0, 8);
 if (!matches.length) { box.classList.remove('show'); return; }
 box.innerHTML = matches.map(c => '<div class="sItem" onclick="selectCompanySuggest(\'' + c.id + '\')">' + c.name + '</div>').join('');
 box.classList.add('show');
 }
-function selectCompanySuggest(companyId) {
-const c = companies.find(x => x.id === companyId);
+function selectCompanySuggest(clientId) {
+const c = clients.find(x => x.id === clientId);
 if (!c) return;
 companyInput.value = c.name;
-selectedCompanyId = companyId;
+selectedCompanyId = clientId;
 document.getElementById('companySuggest').classList.remove('show');
-const locs = c.locations || [];
-if (locs.length > 1) {
-  document.getElementById('entryLocSelectWrap').style.display = 'block';
-  const sel = document.getElementById('entryLocSelect');
-  sel.innerHTML = locs.map(l => '<option value="' + l.id + '">' + (l.locationName || '') + '</option>').join('');
-  sel.onchange = () => applyLocToFields(c, sel.value);
-  applyLocToFields(c, locs[0].id);
-} else if (locs.length === 1) {
-  document.getElementById('entryLocSelectWrap').style.display = 'none';
-  applyLocToFields(c, locs[0].id);
-}
-}
-function applyLocToFields(c, locId) {
-const loc = (c.locations || []).find(l => l.id === locId);
-if (!loc) return;
-selectedLocId = locId;
 const field = document.getElementById('pickupPlaceInput');
-if (!field.value.trim()) {
-  field.value = (loc.locationName && loc.locationName !== '本社' ? loc.locationName + ' ' : '') + (loc.address || '');
-}
+if (!field.value.trim() && c.address) field.value = c.address;
 const phoneField = document.getElementById('phoneInput');
-if (!phoneField.value.trim() && loc.phone) phoneField.value = loc.phone;
+if (!phoneField.value.trim() && c.contactPhone) phoneField.value = c.contactPhone;
 }
 
 // 車 入力候補
@@ -945,7 +1062,6 @@ const data = {
   customTime: selectedTimeType === 'custom' ? document.getElementById('customTimeInput').value : '',
   companyName,
   companyId: selectedCompanyId,
-  locationId: selectedLocId,
   phone: document.getElementById('phoneInput').value.trim(),
   pickupPlace: document.getElementById('pickupPlaceInput').value.trim(),
   workers,
@@ -977,111 +1093,233 @@ db.collection('haishaBoard').doc(editId).delete()
   .catch(err => alert('削除に失敗しました: ' + err.message));
 }
 
-// ---------- お弁当 ----------
-const bentoDatePicker = document.getElementById('bentoDatePicker');
-bentoDatePicker.value = bentoDate;
-bentoDatePicker.addEventListener('change', () => { bentoDate = bentoDatePicker.value; loadBentoDate(); });
-function changeBentoDay(diff) {
-const parts = bentoDate.split('-').map(Number);
-const d = new Date(parts[0], parts[1]-1, parts[2] + diff);
-bentoDate = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-bentoDatePicker.value = bentoDate;
-loadBentoDate();
-}
-function goBentoToday() { bentoDate = todayStr(); bentoDatePicker.value = bentoDate; loadBentoDate(); }
-
-function loadBentoDate() {
-document.getElementById('bentoBigDateLabel').textContent = formatBigDate(bentoDate);
-if (bentoUnsub) bentoUnsub();
-bentoUnsub = db.collection('bentoDaily').doc(bentoDate).onSnapshot(doc => {
-  bentoDailyData = (doc.exists && doc.data().entries) ? doc.data().entries : {};
-  if (activeMainTab === 'bento') renderBentoSummaryAndList();
+// ---- 配車ボード全体 LINE/印刷 ----
+function buildBoardShareText() {
+if (!boardEntries.length) return null;
+let text = formatBigDate(currentDate) + ' の配車予定\n\n';
+boardEntries.forEach(e => {
+  const timeLabel = e.timeType === 'am' ? '午前' : e.timeType === 'pm' ? '午後' : (e.customTime || '時間指定');
+  text += '【' + timeLabel + '】' + (e.companyName || '') + '\n';
+  if (e.pickupPlace) text += '場所:' + e.pickupPlace + '\n';
+  if (e.workers && e.workers.length) text += '作業員:' + e.workers.join('・') + '\n';
+  if (e.truck) text += '車:' + e.truck + '\n';
+  if (e.belongings) text += '持ち物:' + e.belongings + '\n';
+  text += '状態:' + (e.status === 'done' ? '回収済' : '未回収') + '\n\n';
 });
+return text;
+}
+function shareBoardToLine() {
+const text = buildBoardShareText();
+if (!text) { alert('本日の予定がありません'); return; }
+const lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(text);
+const w = window.open('', '_blank');
+w.document.write(
+  '<html><head><meta charset="UTF-8"><title>LINEへ送る</title>' +
+  '<style>body{font-family:sans-serif;padding:24px;background:#f5f5f5;} pre{white-space:pre-wrap;background:white;padding:14px;border-radius:8px;font-size:14px;border:1px solid #ddd;}' +
+  'a.btn{display:block;text-align:center;background:#06C755;color:white;padding:14px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:16px;}' +
+  'button.closeBtn2{width:100%;padding:14px;border:none;border-radius:8px;background:#eee;color:#333;font-size:15px;margin-top:10px;}</style></head><body>' +
+  '<h2>LINEへ送る内容</h2><pre>' + text.replace(/</g,'&lt;') + '</pre>' +
+  '<a class="btn" href="' + lineUrl + '">LINEを開く</a>' +
+  '<button class="closeBtn2" onclick="window.close()">このページを閉じる</button></body></html>'
+);
+w.document.close();
+}
+function printBoard() {
+if (!boardEntries.length) { alert('本日の予定がありません'); return; }
+const rows = boardEntries.map(e => {
+  const timeLabel = e.timeType === 'am' ? '午前' : e.timeType === 'pm' ? '午後' : (e.customTime || '');
+  return '<tr><td>' + timeLabel + '</td><td>' + (e.companyName || '') + '</td><td>' + (e.pickupPlace || '') + '</td><td>' + arrLabel(e.workers) + '</td><td>' + (e.truck || '') + '</td><td>' + (e.belongings || '') + '</td><td>' + (e.status === 'done' ? '回収済' : '未回収') + '</td></tr>';
+}).join('');
+const w = window.open('', '_blank');
+w.document.write(
+  '<html><head><meta charset="UTF-8"><title>配車予定 ' + currentDate + '</title>' +
+  '<style>body{font-family:sans-serif;padding:30px;} h1{border-bottom:2px solid #1D3557;padding-bottom:8px;}' +
+  'table{border-collapse:collapse;width:100%;margin-top:16px;} td,th{border:1px solid #ccc;padding:8px 10px;font-size:13px;text-align:left;} th{background:#f0f0f0;}</style></head><body>' +
+  '<h1>配車予定:' + formatBigDate(currentDate) + '</h1>' +
+  '<table><tr><th>時間帯</th><th>会社名</th><th>場所</th><th>作業員</th><th>車</th><th>持ち物</th><th>状態</th></tr>' + rows + '</table>' +
+  '<button onclick="window.close()" style="width:100%;padding:14px;border:none;border-radius:8px;background:#eee;color:#333;font-size:15px;margin-top:16px;">閉じる</button>' +
+  '<scr' + 'ipt>window.print();<\/scr' + 'ipt></body></html>'
+);
+w.document.close();
 }
 
-function getWorkerState(name) {
-const saved = bentoDailyData[name];
-if (saved) return saved;
-return {offType: 'none', needBento: true};
-}
-function defaultNeedBento(offType) {
-return offType !== 'full_off';
-}
-
-let lastBentoSummary = {total: 0, rice: 0, noodle: 0, side: 0, shellfishNames: []};
-function renderBentoSummaryAndList() {
-if (!collectorList.length) {
-  document.getElementById('bentoSummaryBox').innerHTML = '<div class="sub">作業員一覧が未登録です。設定タブから登録してください。</div>';
-  document.getElementById('bentoWorkerList').innerHTML = '';
-  return;
-}
-let total = 0, rice = 0, noodle = 0, side = 0, unset = 0;
-const shellfishNames = [];
-collectorList.forEach(name => {
-  const state = getWorkerState(name);
-  if (!state.needBento) return;
-  total++;
-  const profile = workerProfiles[name];
-  if (!profile || !profile.bentoType) { unset++; return; }
-  if (profile.bentoType === 'rice') rice++;
-  else if (profile.bentoType === 'noodle') noodle++;
-  else if (profile.bentoType === 'side') side++;
-  if (profile.shellfish) shellfishNames.push(name);
-});
-let html = '<div class="big">本日のお弁当:' + total + '個</div>';
-html += '<div class="sub">お弁当:' + rice + '個 ／ おかずのみ:' + side + '個 ／ 甲殻類不可:' + shellfishNames.length + '個 ／ 麺:' + noodle + '個' + (unset ? ' ／ 種類未設定:' + unset + '個' : '') + '</div>';
-if (shellfishNames.length) html += '<div class="warn">⚠️ 甲殻類が食べられない人:' + shellfishNames.join('・') + '</div>';
-if (unset) html += '<div class="warn">⚠️ 設定タブでお弁当の種類が未設定の人がいます</div>';
-html += '<button class="copyBtn" onclick="copyBentoSummary()">この内容をコピー</button>';
-document.getElementById('bentoSummaryBox').innerHTML = html;
-lastBentoSummary = {total, rice, noodle, side, shellfishNames};
-
-const list = document.getElementById('bentoWorkerList');
-list.innerHTML = collectorList.map(name => {
-  const state = getWorkerState(name);
-  const profile = workerProfiles[name] || {};
-  const tags = [];
-  if (profile.bentoType === 'rice') tags.push('お弁当');
-  else if (profile.bentoType === 'noodle') tags.push('麺');
-  else if (profile.bentoType === 'side') tags.push('おかずのみ');
-  else tags.push('種類未設定');
-  if (profile.shellfish) tags.push('🦐不可');
-  const offTypes = [['none','出勤'],['am_off','午前休み'],['pm_off','午後休み'],['full_off','1日休み']];
-  const offBtns = offTypes.map(([key,label]) =>
-    '<button type="button" class="' + (state.offType === key ? 'active' : '') + '" onclick="setWorkerOffType(\'' + name.replace(/'/g,"\\'") + '\',\'' + key + '\')">' + label + '</button>'
-  ).join('');
-  return '<div class="workerCard">' +
-    '<span class="wName">' + name + '</span>' +
-    '<span class="wTags">' + tags.map(t => '<span class="wTag">' + t + '</span>').join('') + '</span>' +
-    '<div class="offTypeRow">' + offBtns + '</div>' +
-    '<div class="needBentoRow"><label><input type="checkbox" ' + (state.needBento ? 'checked' : '') + ' onchange="setWorkerNeedBento(\'' + name.replace(/'/g,"\\'") + '\',this.checked)"> お弁当が必要</label></div>' +
-    '</div>';
+// ---------- 取引先一覧 ----------
+function renderClientList() {
+const div = document.getElementById('clientListArea');
+if (!div) return;
+if (!clients.length) { div.innerHTML = '<div class="empty">取引先がまだ登録されていません</div>'; return; }
+div.innerHTML = clients.map(c => {
+  return '<div class="card" onclick="openEditClient(\'' + c.id + '\')">' +
+    '<h2 style="margin:0;font-size:17px;color:#1D3557;">' + c.name + '</h2>' +
+    (c.address ? '<div style="color:#666;font-size:13px;margin-top:4px;">' + c.address + '</div>' : '') +
+    (c.contactName ? '<div style="color:#666;font-size:13px;">担当:' + c.contactName + (c.contactPhone ? '(' + c.contactPhone + ')' : '') + '</div>' : '') +
+  '</div>';
 }).join('');
 }
-function saveBentoState(name, newState) {
-const merged = Object.assign({}, bentoDailyData, {[name]: newState});
-db.collection('bentoDaily').doc(bentoDate).set({entries: merged}, {merge: true});
+let selectedClientManifest = 'なし';
+function selectClientManifest(v) {
+selectedClientManifest = v;
+document.getElementById('clientManifestNashi').classList.toggle('active', v === 'なし');
+document.getElementById('clientManifestAri').classList.toggle('active', v === 'あり');
+document.getElementById('clientManifestDigitalWrap').style.display = (v === 'あり') ? 'block' : 'none';
 }
-function setWorkerOffType(name, offType) {
-const newState = {offType, needBento: defaultNeedBento(offType)};
-saveBentoState(name, newState);
+function fillClientShuhinChecks(selected) {
+const el = document.getElementById('clientShuhinChecks');
+if (!shuhinOptions.length) { el.innerHTML = '<span style="color:#999;font-size:13px;">回収物一覧が未登録です</span>'; return; }
+el.innerHTML = shuhinOptions.map(name => '<label><input type="checkbox" class="clientShuhinCk" value="' + name + '" ' + (selected.includes(name) ? 'checked' : '') + '> ' + name + '</label>').join('');
 }
-function setWorkerNeedBento(name, checked) {
-const cur = getWorkerState(name);
-saveBentoState(name, {offType: cur.offType, needBento: checked});
+function toggleClientShuhinPanel() {
+const panel = document.getElementById('clientShuhinChecks');
+panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'flex' : 'none';
 }
-function copyBentoSummary() {
-const {total, rice, noodle, side, shellfishNames} = lastBentoSummary;
-let text = formatBigDate(bentoDate) + ' のお弁当\n合計:' + total + '個\nお弁当:' + rice + '個\nおかずのみ:' + side + '個\n甲殻類不可:' + shellfishNames.length + '個\n麺:' + noodle + '個';
-if (shellfishNames.length) text += '\n(甲殻類不可の人:' + shellfishNames.join('・') + ')';
-if (navigator.clipboard && navigator.clipboard.writeText) {
-  navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(() => prompt('コピーしてください', text));
+function quickAddClientShuhin() {
+const input = document.getElementById('clientShuhinQuickInput');
+const name = input.value.trim();
+if (!name) return;
+const checkedNow = Array.from(document.querySelectorAll('.clientShuhinCk:checked')).map(el => el.value);
+const newList = shuhinOptions.includes(name) ? shuhinOptions : shuhinOptions.concat([name]);
+db.collection('pickupSettings').doc('shuhinOptions').set({names: newList}).then(() => {
+  fillClientShuhinChecks(checkedNow.concat([name]));
+  document.getElementById('clientShuhinChecks').style.display = 'flex';
+  input.value = '';
+});
+}
+function openAddClient() {
+document.getElementById('clientModalTitle').textContent = '取引先を追加';
+document.getElementById('editClientId').value = '';
+document.getElementById('deleteClientRow').style.display = 'none';
+document.getElementById('clientNameInput').value = '';
+document.getElementById('clientAddressInput').value = '';
+document.getElementById('clientContactNameInput').value = '';
+document.getElementById('clientContactPhoneInput').value = '';
+fillClientShuhinChecks([]);
+document.getElementById('clientShuhinChecks').style.display = 'none';
+document.getElementById('clientQtyFlecon').value = '';
+document.getElementById('clientQtyAnaAki').value = '';
+document.getElementById('clientQtyAnaNashi').value = '';
+document.getElementById('clientQtyBox').value = '';
+selectClientManifest('なし');
+document.getElementById('clientManifestDigitalInput').checked = false;
+document.getElementById('clientNotesInput').value = '';
+document.getElementById('clientModal').classList.add('show');
+}
+function openEditClient(id) {
+const c = clients.find(x => x.id === id);
+if (!c) return;
+document.getElementById('clientModalTitle').textContent = '取引先を編集';
+document.getElementById('editClientId').value = c.id;
+document.getElementById('deleteClientRow').style.display = 'flex';
+document.getElementById('clientNameInput').value = c.name || '';
+document.getElementById('clientAddressInput').value = c.address || '';
+document.getElementById('clientContactNameInput').value = c.contactName || '';
+document.getElementById('clientContactPhoneInput').value = c.contactPhone || '';
+fillClientShuhinChecks(c.shuhinSelected || []);
+document.getElementById('clientShuhinChecks').style.display = 'none';
+const items = c.items || {};
+document.getElementById('clientQtyFlecon').value = items.flecon || '';
+document.getElementById('clientQtyAnaAki').value = items.anaAkiDrum || '';
+document.getElementById('clientQtyAnaNashi').value = items.anaNashiDrum || '';
+document.getElementById('clientQtyBox').value = items.box || '';
+selectClientManifest(c.manifestHas === 'あり' ? 'あり' : 'なし');
+document.getElementById('clientManifestDigitalInput').checked = !!c.manifestDigital;
+document.getElementById('clientNotesInput').value = c.notes || '';
+document.getElementById('clientModal').classList.add('show');
+}
+function saveClient() {
+const name = document.getElementById('clientNameInput').value.trim();
+if (!name) { alert('会社名を入力してください'); return; }
+const data = {
+  name,
+  address: document.getElementById('clientAddressInput').value.trim(),
+  contactName: document.getElementById('clientContactNameInput').value.trim(),
+  contactPhone: document.getElementById('clientContactPhoneInput').value.trim(),
+  shuhinSelected: Array.from(document.querySelectorAll('.clientShuhinCk:checked')).map(el => el.value),
+  items: {
+    flecon: parseInt(document.getElementById('clientQtyFlecon').value) || 0,
+    anaAkiDrum: parseInt(document.getElementById('clientQtyAnaAki').value) || 0,
+    anaNashiDrum: parseInt(document.getElementById('clientQtyAnaNashi').value) || 0,
+    box: parseInt(document.getElementById('clientQtyBox').value) || 0
+  },
+  manifestHas: selectedClientManifest,
+  manifestDigital: selectedClientManifest === 'あり' ? document.getElementById('clientManifestDigitalInput').checked : false,
+  notes: document.getElementById('clientNotesInput').value.trim(),
+  updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+};
+const editId = document.getElementById('editClientId').value;
+if (editId) {
+  db.collection('haishaClients').doc(editId).update(data)
+    .then(() => closeModal('clientModal'))
+    .catch(err => alert('保存に失敗しました: ' + err.message));
 } else {
-  prompt('コピーしてください', text);
+  data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+  db.collection('haishaClients').add(data)
+    .then(() => closeModal('clientModal'))
+    .catch(err => alert('保存に失敗しました: ' + err.message));
 }
+}
+function deleteClient() {
+const editId = document.getElementById('editClientId').value;
+if (!editId) return;
+if (!confirm('この取引先を削除しますか?')) return;
+db.collection('haishaClients').doc(editId).delete()
+  .then(() => closeModal('clientModal'))
+  .catch(err => alert('削除に失敗しました: ' + err.message));
 }
 
-// ---------- 設定 ----------
+// ---- その他(共有マスタ)チップ表示 ----
+function renderChips(containerId, list, removeFnName) {
+const div = document.getElementById(containerId);
+if (!div) return;
+if (!list.length) { div.innerHTML = '<div style="color:#999;font-size:13px;">未登録</div>'; return; }
+div.innerHTML = list.map(name => {
+  const safe = name.replace(/'/g,"\\'");
+  return '<div class="settingsRow"><span class="rName">' + name + '</span><button class="delX" onclick="' + removeFnName + '(\'' + safe + '\')">削除</button></div>';
+}).join('');
+}
+function renderClientOtherLists() {
+renderChips('clientWorkerChips', collectorList, 'removeWorkerSetting');
+renderChips('clientTruckChips', truckList, 'removeTruckSetting');
+renderChips('clientShuhinChips', shuhinOptions, 'removeShuhinOption');
+renderChips('clientManifestChips', manifestTypeList, 'removeManifestTypeOption');
+}
+function addWorkerFromClientTab() {
+const input = document.getElementById('newClientWorkerInput');
+const name = input.value.trim();
+if (!name) return;
+addWorkerToListsIfMissing(name);
+input.value = '';
+}
+function addTruckFromClientTab() {
+const input = document.getElementById('newClientTruckInput');
+const name = input.value.trim();
+if (!name) return;
+const newList = truckList.includes(name) ? truckList : truckList.concat([name]);
+db.collection('pickupSettings').doc('truckList').set({names: newList}).then(() => input.value = '');
+}
+function addShuhinOption() {
+const input = document.getElementById('newShuhinOptionInput');
+const name = input.value.trim();
+if (!name) return;
+const newList = shuhinOptions.includes(name) ? shuhinOptions : shuhinOptions.concat([name]);
+db.collection('pickupSettings').doc('shuhinOptions').set({names: newList}).then(() => input.value = '');
+}
+function removeShuhinOption(name) {
+if (!confirm(name + 'を回収物一覧から削除しますか?')) return;
+db.collection('pickupSettings').doc('shuhinOptions').set({names: shuhinOptions.filter(n => n !== name)});
+}
+function addManifestTypeOption() {
+const input = document.getElementById('newManifestTypeOptionInput');
+const name = input.value.trim();
+if (!name) return;
+const newList = manifestTypeList.includes(name) ? manifestTypeList : manifestTypeList.concat([name]);
+db.collection('pickupSettings').doc('manifestTypes').set({names: newList}).then(() => input.value = '');
+}
+function removeManifestTypeOption(name) {
+if (!confirm(name + 'をマニフェスト内容一覧から削除しますか?')) return;
+db.collection('pickupSettings').doc('manifestTypes').set({names: manifestTypeList.filter(n => n !== name)});
+}
+
+// ---------- 設定(作業員のお弁当設定) ----------
 function renderSettingsLists() {
 const wDiv = document.getElementById('workerSettingsList');
 if (!collectorList.length) {
@@ -1090,27 +1328,16 @@ if (!collectorList.length) {
   wDiv.innerHTML = collectorList.map(name => {
     const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
     const safe = name.replace(/'/g,"\\'");
-    return '<div class="settingsRow' + (profile.earlyReturn ? ' earlyRow' : '') + '">' +
-      '<span class="rName">' + name + (profile.earlyReturn ? '<span class="earlyTag">早</span>' : '') + '</span>' +
+    return '<div class="settingsRow">' +
+      '<span class="rName">' + name + '</span>' +
       '<select onchange="updateWorkerBentoType(\'' + safe + '\',this.value)">' +
         '<option value="rice" ' + (profile.bentoType === 'rice' ? 'selected' : '') + '>お弁当</option>' +
         '<option value="noodle" ' + (profile.bentoType === 'noodle' ? 'selected' : '') + '>麺</option>' +
         '<option value="side" ' + (profile.bentoType === 'side' ? 'selected' : '') + '>おかずのみ</option>' +
       '</select>' +
       '<label class="inlineChk"><input type="checkbox" ' + (profile.shellfish ? 'checked' : '') + ' onchange="updateWorkerShellfish(\'' + safe + '\',this.checked)"> 甲殻類不可</label>' +
-      '<input type="tel" placeholder="電話番号" value="' + (profile.phone || '') + '" onchange="updateWorkerPhone(\'' + safe + '\',this.value)">' +
-      '<label class="inlineChk"><input type="checkbox" ' + (profile.earlyReturn ? 'checked' : '') + ' onchange="updateWorkerEarly(\'' + safe + '\',this.checked)"> 早い人</label>' +
       '<button class="delX" onclick="removeWorkerSetting(\'' + safe + '\')">削除</button>' +
       '</div>';
-  }).join('');
-}
-const tDiv = document.getElementById('truckSettingsList');
-if (!truckList.length) {
-  tDiv.innerHTML = '<div style="color:#999;font-size:14px;">まだ登録されていません</div>';
-} else {
-  tDiv.innerHTML = truckList.map(name => {
-    const safe = name.replace(/'/g,"\\'");
-    return '<div class="settingsRow"><span class="rName">' + name + '</span><button class="delX" onclick="removeTruckSetting(\'' + safe + '\')">削除</button></div>';
   }).join('');
 }
 }
@@ -1128,26 +1355,16 @@ db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newPro
 }
 function updateWorkerBentoType(name, bentoType) { updateWorkerProfileField(name, 'bentoType', bentoType); }
 function updateWorkerShellfish(name, checked) { updateWorkerProfileField(name, 'shellfish', checked); }
-function updateWorkerPhone(name, phone) { updateWorkerProfileField(name, 'phone', phone.trim()); }
-function updateWorkerEarly(name, checked) { updateWorkerProfileField(name, 'earlyReturn', checked); }
 function removeWorkerSetting(name) {
-if (!confirm(name + 'さんを作業員一覧から削除しますか?(配車ボードや取引先管理でも使われなくなります)')) return;
+if (!confirm(name + 'さんを作業員一覧から削除しますか?(配車ボードや取引先一覧でも使われなくなります)')) return;
 db.collection('pickupSettings').doc('collectorList').set({names: collectorList.filter(n => n !== name)});
 }
-function addTruckSetting() {
-const input = document.getElementById('newTruckSettingInput');
-const name = input.value.trim();
-if (!name) return;
-const newList = truckList.includes(name) ? truckList : truckList.concat([name]);
-db.collection('pickupSettings').doc('truckList').set({names: newList}).then(() => input.value = '');
-}
 function removeTruckSetting(name) {
-if (!confirm(name + 'をトラック一覧から削除しますか?(配車ボードや取引先管理でも使われなくなります)')) return;
+if (!confirm(name + 'をトラック一覧から削除しますか?(配車ボードや取引先一覧でも使われなくなります)')) return;
 db.collection('pickupSettings').doc('truckList').set({names: truckList.filter(n => n !== name)});
 }
 
 loadDate();
-loadBentoDate();
 </script>
 </body>
 </html>
