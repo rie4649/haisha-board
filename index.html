@@ -131,6 +131,9 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 .settingsRow { display: flex; align-items: center; gap: 8px; background: white; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); flex-wrap: wrap; }
 .settingsRow .rName { font-weight: bold; flex: 1; min-width: 80px; }
 .settingsRow .delX { color: #c0392b; border: 1px solid #c0392b; border-radius: 6px; padding: 4px 10px; font-size: 12px; background: white; }
+.pillBtn { padding: 6px 10px; border: 1px solid #ccc; border-radius: 16px; background: white; font-size: 12px; color: #333; white-space: nowrap; }
+.pillBtn.active { background: #1D3557; color: white; border-color: #1D3557; }
+.pillDivider { width: 1px; background: #ddd; align-self: stretch; margin: 0 2px; }
 .clientListArea { padding: 12px 16px 0; }
 .clientModeRow { display: flex; gap: 8px; padding: 12px 16px 0; }
 .clientModeRow button { flex: 1; padding: 10px; border: 1px solid #1D3557; border-radius: 8px; background: white; color: #1D3557; font-weight: bold; font-size: 14px; }
@@ -428,6 +431,7 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div id="monthlySummaryResult"></div>
   <div class="btnrow" id="monthlySummaryPrintRow" style="display:none;">
     <button class="secondary" onclick="printMonthlySummary()">印刷</button>
+    <button class="secondary" onclick="saveMonthlySummaryFile()">保存(テキスト)</button>
   </div>
 </div>
 </div>
@@ -777,13 +781,17 @@ const labels = {none: '出勤', am_off: '午前休み', pm_off: '午後休み', 
 const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
 const btnClass = state.offType === 'none' ? '' : 'off';
 const btnLabel = state.offType === 'none' ? '休み' : labels[state.offType];
-const teamTag = state.team ? ' <span style="color:#1D3557;font-size:11px;font-weight:bold;">[' + teamLabels[state.team] + ']</span>' : '';
+const safe = name.replace(/'/g,"\\'");
+const teamBtns = ['A','B','free'].map(t =>
+  '<button type="button" class="' + (state.team === t ? 'active' : '') + '" onclick="assignWorkerTeam(\'' + safe + '\',\'' + t + '\')">' + teamLabels[t] + '</button>'
+).join('');
 return '<div class="attendBlock">' +
-  '<div class="attendRow"><span>' + name + teamTag + '</span>' +
+  '<div class="offSelectorRow" style="margin-top:0;margin-bottom:6px;">' + teamBtns + '</div>' +
+  '<div class="attendRow"><span>' + name + '</span>' +
   '<button class="miniOffBtn ' + btnClass + '" onclick="toggleOffSelector(' + idx + ')">' + btnLabel + '</button></div>' +
   '<div class="offSelectorRow" id="offSel_' + idx + '" style="display:none;">' +
     ['none','am_off','pm_off','full_off'].map(key =>
-      '<button type="button" class="' + (state.offType === key ? 'active' : '') + '" onclick="setWorkerOffTypeAndCollapse(\'' + name.replace(/'/g,"\\'") + '\',\'' + key + '\',' + idx + ')">' + labels[key] + '</button>'
+      '<button type="button" class="' + (state.offType === key ? 'active' : '') + '" onclick="setWorkerOffTypeAndCollapse(\'' + safe + '\',\'' + key + '\',' + idx + ')">' + labels[key] + '</button>'
     ).join('') +
   '</div>' +
 '</div>';
@@ -831,13 +839,15 @@ if (!fullOff.length && !amOff.length && !pmOff.length) {
 }
 renderBentoMiniBox();
 }
-let lastBentoMiniSummary = {total: 0, rice: 0, noodle: 0, side: 0, shellfishNo: 0, shellfishNames: []};
+let lastBentoMiniSummary = {total: 0, rice: 0, noodle: 0, side: 0, shellfishNo: 0, shellfishNames: [], noodleNames: [], sideNames: []};
 function renderBentoMiniBox() {
 const box = document.getElementById('bentoMiniBox');
 if (!box) return;
 if (!collectorList.length) { box.innerHTML = '<div style="color:#999;font-size:13px;">作業員未登録です</div>'; return; }
 let total = 0, rice = 0, noodle = 0, side = 0, shellfishNo = 0, unset = 0;
 const shellfishNames = [];
+const noodleNames = [];
+const sideNames = [];
 collectorList.forEach(name => {
   const state = boardAttendanceData[name] || {offType: 'none'};
   if (state.offType === 'full_off') return;
@@ -845,24 +855,28 @@ collectorList.forEach(name => {
   const profile = workerProfiles[name];
   if (!profile || !profile.bentoType) { unset++; return; }
   if (profile.bentoType === 'rice') rice++;
-  else if (profile.bentoType === 'noodle') noodle++;
-  else if (profile.bentoType === 'side') side++;
+  else if (profile.bentoType === 'noodle') { noodle++; noodleNames.push(name); }
+  else if (profile.bentoType === 'side') { side++; sideNames.push(name); }
   else if (profile.bentoType === 'shellfish_no') { shellfishNo++; shellfishNames.push(name); }
 });
 let html = '<div class="bentoMiniSub">お弁当:' + rice + '個</div>';
 html += '<div class="bentoMiniSub">おかずのみ:' + side + '個</div>';
+if (sideNames.length) html += '<div class="bentoMiniSub" style="color:#666;">(おかずのみの人:' + sideNames.join('・') + ')</div>';
 html += '<div class="bentoMiniSub">麺:' + noodle + '個</div>';
+if (noodleNames.length) html += '<div class="bentoMiniSub" style="color:#666;">(麺の人:' + noodleNames.join('・') + ')</div>';
 html += '<div class="bentoMiniSub">甲殻類不可:' + shellfishNo + '個</div>';
+if (shellfishNames.length) html += '<div class="bentoMiniSub" style="color:#c0392b;">(甲殻類不可の人:' + shellfishNames.join('・') + ')</div>';
 if (unset) html += '<div class="bentoMiniSub">未設定:' + unset + '個</div>';
 html += '<div class="bentoMiniBig">合計:' + total + '個</div>';
-if (shellfishNames.length) html += '<div class="bentoMiniSub" style="color:#c0392b;">(甲殻類不可の人:' + shellfishNames.join('・') + ')</div>';
 html += '<button class="copyBtnSmall" onclick="copyBentoMiniSummary()">この内容をコピー</button>';
 box.innerHTML = html;
-lastBentoMiniSummary = {total, rice, noodle, side, shellfishNo, shellfishNames};
+lastBentoMiniSummary = {total, rice, noodle, side, shellfishNo, shellfishNames, noodleNames, sideNames};
 }
 function copyBentoMiniSummary() {
-const {total, rice, noodle, side, shellfishNo, shellfishNames} = lastBentoMiniSummary;
+const {total, rice, noodle, side, shellfishNo, shellfishNames, noodleNames, sideNames} = lastBentoMiniSummary;
 let text = formatBigDate(currentDate) + ' のお弁当\nお弁当:' + rice + '個\nおかずのみ:' + side + '個\n麺:' + noodle + '個\n甲殻類不可:' + shellfishNo + '個\n合計:' + total + '個';
+if (sideNames.length) text += '\n(おかずのみの人:' + sideNames.join('・') + ')';
+if (noodleNames.length) text += '\n(麺の人:' + noodleNames.join('・') + ')';
 if (shellfishNames.length) text += '\n(甲殻類不可の人:' + shellfishNames.join('・') + ')';
 if (navigator.clipboard && navigator.clipboard.writeText) {
   navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(() => prompt('コピーしてください', text));
@@ -1538,6 +1552,26 @@ w.document.write(
 );
 w.document.close();
 }
+function saveMonthlySummaryFile() {
+if (!lastMonthlySummary) return;
+const {monthVal, normalRows, jomuRows, shukkaRows, boardTotal, shukkaTotal} = lastMonthlySummary;
+function rowsText(rows) {
+  return rows.length ? rows.map(r => '　' + r.name + ':' + r.count + '回').join('\n') : '　記録なし';
+}
+const text = '月間集計:' + monthVal + '\n配車合計:' + boardTotal + '件 / 出荷合計:' + shukkaTotal + '件\n\n' +
+  '【配車:通常】\n' + rowsText(normalRows) + '\n\n' +
+  '【配車:常務】\n' + rowsText(jomuRows) + '\n\n' +
+  '【出荷】\n' + rowsText(shukkaRows) + '\n';
+const blob = new Blob([text], {type: 'text/plain'});
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = '月間集計_' + monthVal + '.txt';
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+URL.revokeObjectURL(url);
+}
 
 // ---------- 取引先一覧 ----------
 function switchClientMode(mode) {
@@ -1812,18 +1846,17 @@ wDiv.innerHTML = collectorList.map(name => {
   const safe = name.replace(/'/g,"\\'");
   const currentTeam = (boardAttendanceData[name] && boardAttendanceData[name].team) || null;
   const teamBtns = ['A','B','free'].map(t =>
-    '<button type="button" class="' + (currentTeam === t ? 'active' : '') + '" onclick="assignWorkerTeam(\'' + safe + '\',\'' + t + '\')">' + teamLabels[t] + '</button>'
+    '<button type="button" class="pillBtn ' + (currentTeam === t ? 'active' : '') + '" onclick="assignWorkerTeam(\'' + safe + '\',\'' + t + '\')">' + teamLabels[t] + '</button>'
   ).join('');
   const btns = ['rice','side','noodle','shellfish_no'].map(key =>
-    '<button type="button" class="' + (profile.bentoType === key ? 'active' : '') + '" onclick="updateWorkerBentoType(\'' + safe + '\',\'' + key + '\')">' + bentoLabels[key] + '</button>'
+    '<button type="button" class="pillBtn ' + (profile.bentoType === key ? 'active' : '') + '" onclick="updateWorkerBentoType(\'' + safe + '\',\'' + key + '\')">' + bentoLabels[key] + '</button>'
   ).join('');
-  return '<div class="settingsRow" style="flex-direction:column;align-items:stretch;">' +
-    '<div class="timeTypeRow">' + teamBtns + '</div>' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">' +
-    '<span class="rName">' + name + '</span>' +
+  return '<div class="settingsRow">' +
+    '<span class="rName" style="flex:0 0 auto;">' + name + '</span>' +
+    teamBtns +
+    '<span class="pillDivider"></span>' +
+    btns +
     '<button class="delX" onclick="removeWorkerSetting(\'' + safe + '\')">削除</button>' +
-    '</div>' +
-    '<div class="timeTypeRow" style="margin-top:8px;">' + btns + '</div>' +
     '</div>';
 }).join('');
 }
