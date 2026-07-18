@@ -702,9 +702,9 @@ function ensureWorkerProfilesExist() {
 if (!collectorList.length) return;
 const missing = collectorList.filter(name => !workerProfiles[name]);
 if (!missing.length) return;
-const newProfiles = Object.assign({}, workerProfiles);
-missing.forEach(name => { newProfiles[name] = defaultProfile(); });
-db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newProfiles}).catch(err => alert('保存に失敗しました: ' + err.message));
+const updates = {};
+missing.forEach(name => { updates[name] = defaultProfile(); });
+db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: updates}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
 }
 
 function companyMatchesKeyword(c, keyword) {
@@ -858,9 +858,7 @@ if (!el) return;
 el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
 }
 function setWorkerOffTypeAndCollapse(name, offType, idx) {
-const existing = boardAttendanceData[name] || {};
-const merged = Object.assign({}, boardAttendanceData, {[name]: {offType, team: existing.team || null}});
-db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
+db.collection('bentoDaily').doc(currentDate).set({entries: {[name]: {offType}}}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
 const el = document.getElementById('offSel_' + idx);
 if (el) el.style.display = 'none';
 }
@@ -1421,12 +1419,10 @@ input.value = '';
 }
 function addWorkerToListsIfMissing(name) {
 if (!collectorList.includes(name)) {
-  const newList = collectorList.concat([name]);
-  db.collection('pickupSettings').doc('collectorList').set({names: newList}).catch(err => alert('保存に失敗しました: ' + err.message));
+  db.collection('pickupSettings').doc('collectorList').set({names: firebase.firestore.FieldValue.arrayUnion(name)}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
 }
 if (!workerProfiles[name]) {
-  const newProfiles = Object.assign({}, workerProfiles, {[name]: defaultProfile()});
-  db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newProfiles}).catch(err => alert('保存に失敗しました: ' + err.message));
+  db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: {[name]: defaultProfile()}}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
 }
 }
 
@@ -1825,8 +1821,7 @@ const input = document.getElementById('clientShuhinQuickInput');
 const name = input.value.trim();
 if (!name) return;
 const checkedNow = Array.from(document.querySelectorAll('.clientShuhinCk:checked')).map(el => el.value);
-const newList = shuhinOptions.includes(name) ? shuhinOptions : shuhinOptions.concat([name]);
-db.collection('pickupSettings').doc('shuhinOptions').set({names: newList}).then(() => {
+db.collection('pickupSettings').doc('shuhinOptions').set({names: firebase.firestore.FieldValue.arrayUnion(name)}, {merge: true}).then(() => {
   fillClientShuhinChecks(checkedNow.concat([name]));
   document.getElementById('clientShuhinChecks').style.display = 'flex';
   input.value = '';
@@ -1846,8 +1841,7 @@ const input = document.getElementById('clientManifestTypeQuickInput');
 const name = input.value.trim();
 if (!name) return;
 const checkedNow = Array.from(document.querySelectorAll('.clientManifestTypeCk:checked')).map(el => el.value);
-const newList = manifestTypeList.includes(name) ? manifestTypeList : manifestTypeList.concat([name]);
-db.collection('pickupSettings').doc('manifestTypes').set({names: newList}).then(() => {
+db.collection('pickupSettings').doc('manifestTypes').set({names: firebase.firestore.FieldValue.arrayUnion(name)}, {merge: true}).then(() => {
   fillClientManifestTypeChecks(checkedNow.concat([name]));
   document.getElementById('clientManifestTypeChecks').style.display = 'flex';
   input.value = '';
@@ -2018,63 +2012,57 @@ function addTruckFromClientTab() {
 const input = document.getElementById('newClientTruckInput');
 const name = input.value.trim();
 if (!name) return;
-const newList = truckList.includes(name) ? truckList : truckList.concat([name]);
-db.collection('pickupSettings').doc('truckList').set({names: newList}).then(() => input.value = '').catch(err => alert('保存に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('truckList').set({names: firebase.firestore.FieldValue.arrayUnion(name)}, {merge: true}).then(() => input.value = '').catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function addShuhinOption() {
 const input = document.getElementById('newShuhinOptionInput');
 const name = input.value.trim();
 if (!name) return;
-const newList = shuhinOptions.includes(name) ? shuhinOptions : shuhinOptions.concat([name]);
-db.collection('pickupSettings').doc('shuhinOptions').set({names: newList}).then(() => input.value = '').catch(err => alert('保存に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('shuhinOptions').set({names: firebase.firestore.FieldValue.arrayUnion(name)}, {merge: true}).then(() => input.value = '').catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function removeShuhinOption(name) {
 if (!confirm(name + 'を回収物一覧から削除しますか?')) return;
-db.collection('pickupSettings').doc('shuhinOptions').set({names: shuhinOptions.filter(n => n !== name)}).catch(err => alert('削除に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('shuhinOptions').update({names: firebase.firestore.FieldValue.arrayRemove(name)}).catch(err => alert('削除に失敗しました: ' + err.message));
 }
 function addManifestTypeOption() {
 const input = document.getElementById('newManifestTypeOptionInput');
 const name = input.value.trim();
 if (!name) return;
-const newList = manifestTypeList.includes(name) ? manifestTypeList : manifestTypeList.concat([name]);
-db.collection('pickupSettings').doc('manifestTypes').set({names: newList}).then(() => input.value = '').catch(err => alert('保存に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('manifestTypes').set({names: firebase.firestore.FieldValue.arrayUnion(name)}, {merge: true}).then(() => input.value = '').catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function removeManifestTypeOption(name) {
 if (!confirm(name + 'をマニフェスト内容一覧から削除しますか?')) return;
-db.collection('pickupSettings').doc('manifestTypes').set({names: manifestTypeList.filter(n => n !== name)}).catch(err => alert('削除に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('manifestTypes').update({names: firebase.firestore.FieldValue.arrayRemove(name)}).catch(err => alert('削除に失敗しました: ' + err.message));
 }
 function addShukkaDestination() {
 const input = document.getElementById('newShukkaDestInput');
 const name = input.value.trim();
 if (!name) return;
-const newList = shukkaDestinations.includes(name) ? shukkaDestinations : shukkaDestinations.concat([name]);
-db.collection('pickupSettings').doc('shukkaDestinations').set({names: newList}).then(() => input.value = '').catch(err => alert('保存に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('shukkaDestinations').set({names: firebase.firestore.FieldValue.arrayUnion(name)}, {merge: true}).then(() => input.value = '').catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function removeShukkaDestination(name) {
 if (!confirm(name + 'を出荷先一覧から削除しますか?')) return;
-db.collection('pickupSettings').doc('shukkaDestinations').set({names: shukkaDestinations.filter(n => n !== name)}).catch(err => alert('削除に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('shukkaDestinations').update({names: firebase.firestore.FieldValue.arrayRemove(name)}).catch(err => alert('削除に失敗しました: ' + err.message));
 }
 function addShukkaItemOption() {
 const input = document.getElementById('newShukkaItemInput');
 const name = input.value.trim();
 if (!name) return;
-const newList = shukkaItemsList.includes(name) ? shukkaItemsList : shukkaItemsList.concat([name]);
-db.collection('pickupSettings').doc('shukkaItems').set({names: newList}).then(() => input.value = '').catch(err => alert('保存に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('shukkaItems').set({names: firebase.firestore.FieldValue.arrayUnion(name)}, {merge: true}).then(() => input.value = '').catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function removeShukkaItemOption(name) {
 if (!confirm(name + 'を出荷品一覧から削除しますか?')) return;
-db.collection('pickupSettings').doc('shukkaItems').set({names: shukkaItemsList.filter(n => n !== name)}).catch(err => alert('削除に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('shukkaItems').update({names: firebase.firestore.FieldValue.arrayRemove(name)}).catch(err => alert('削除に失敗しました: ' + err.message));
 }
 function addTaskType() {
 const input = document.getElementById('newTaskTypeInput');
 const name = input.value.trim();
 if (!name) return;
-const newList = taskTypes.includes(name) ? taskTypes : taskTypes.concat([name]);
-db.collection('pickupSettings').doc('taskTypes').set({names: newList}).then(() => input.value = '').catch(err => alert('保存に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('taskTypes').set({names: firebase.firestore.FieldValue.arrayUnion(name)}, {merge: true}).then(() => input.value = '').catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function removeTaskType(name) {
 if (!confirm(name + 'を業務内容一覧から削除しますか?')) return;
-db.collection('pickupSettings').doc('taskTypes').set({names: taskTypes.filter(n => n !== name)}).catch(err => alert('削除に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('taskTypes').update({names: firebase.firestore.FieldValue.arrayRemove(name)}).catch(err => alert('削除に失敗しました: ' + err.message));
 }
 
 // ---------- 設定(作業員のお弁当設定) ----------
@@ -2110,21 +2098,17 @@ addWorkerToListsIfMissing(name);
 input.value = '';
 }
 function updateWorkerProfileField(name, field, value) {
-const profile = Object.assign(defaultProfile(), workerProfiles[name] || {}, {[field]: value});
-const newProfiles = Object.assign({}, workerProfiles, {[name]: profile});
-db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newProfiles}).catch(err => alert('保存に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: {[name]: {[field]: value}}}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function updateWorkerBentoType(name, bentoType) { updateWorkerProfileField(name, 'bentoType', bentoType); }
 function assignWorkerTeam(name, team) {
 const existing = boardAttendanceData[name] || {};
 const newTeam = existing.team === team ? null : team;
-const merged = Object.assign({}, boardAttendanceData, {[name]: {offType: 'none', team: newTeam, part: existing.part || false}});
-db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
+db.collection('bentoDaily').doc(currentDate).set({entries: {[name]: {offType: 'none', team: newTeam}}}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function toggleWorkerPart(name) {
 const existing = boardAttendanceData[name] || {};
-const merged = Object.assign({}, boardAttendanceData, {[name]: {offType: existing.offType || 'none', team: existing.team || null, part: !existing.part}});
-db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
+db.collection('bentoDaily').doc(currentDate).set({entries: {[name]: {part: !existing.part}}}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function openPartTimeModal() {
 const el = document.getElementById('partTimeChecks');
@@ -2139,27 +2123,21 @@ document.getElementById('partTimeModal').classList.add('show');
 }
 function savePartTimeSelection() {
 const checked = Array.from(document.querySelectorAll('.partTimeCk:checked')).map(el => el.value);
-const merged = Object.assign({}, boardAttendanceData);
+const updates = {};
 collectorList.forEach(name => {
-  const existing = merged[name] || {offType: 'none', team: null};
-  const isChecked = checked.includes(name);
-  merged[name] = {
-    offType: existing.offType || 'none',
-    team: existing.team || null,
-    part: isChecked
-  };
+  updates[name] = {part: checked.includes(name)};
 });
-db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true})
+db.collection('bentoDaily').doc(currentDate).set({entries: updates}, {merge: true})
   .then(() => closeModal('partTimeModal'))
   .catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function removeWorkerSetting(name) {
 if (!confirm(name + 'さんを作業員一覧から削除しますか?(配車ボードや取引先一覧でも使われなくなります)')) return;
-db.collection('pickupSettings').doc('collectorList').set({names: collectorList.filter(n => n !== name)}).catch(err => alert('削除に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('collectorList').update({names: firebase.firestore.FieldValue.arrayRemove(name)}).catch(err => alert('削除に失敗しました: ' + err.message));
 }
 function removeTruckSetting(name) {
 if (!confirm(name + 'をトラック一覧から削除しますか?(配車ボードや取引先一覧でも使われなくなります)')) return;
-db.collection('pickupSettings').doc('truckList').set({names: truckList.filter(n => n !== name)}).catch(err => alert('削除に失敗しました: ' + err.message));
+db.collection('pickupSettings').doc('truckList').update({names: firebase.firestore.FieldValue.arrayRemove(name)}).catch(err => alert('削除に失敗しました: ' + err.message));
 }
 
 loadDate();
