@@ -171,6 +171,9 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
     <button onclick="shareBoardToLine()">📤 LINEへ送る</button>
     <button onclick="printBoard()">🖨 印刷/PDF</button>
   </div>
+  <div class="dateNav">
+    <button onclick="openMonthlySummary()">📊 月間集計</button>
+  </div>
 </div>
 <div class="boardLayout">
   <div class="boardSidebar">
@@ -185,6 +188,10 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
     <div class="sideBox">
       <h4>🍱 本日のお弁当</h4>
       <div id="bentoMiniBox"></div>
+    </div>
+    <div class="sideBox">
+      <h4>📋 業務 <button class="miniAddBtn" onclick="openAddTask()">＋追加</button></h4>
+      <div id="taskListBox"></div>
     </div>
     <div class="sideBox">
       <h4>📦 出荷 <button class="miniAddBtn" onclick="openAddShukka()">＋追加</button></h4>
@@ -241,6 +248,10 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <h4 style="margin-top:20px;">出荷品一覧</h4>
   <div id="clientShukkaItemChips"></div>
   <div class="addRow"><input type="text" id="newShukkaItemInput" placeholder="例:再生資源A"><button onclick="addShukkaItemOption()">追加</button></div>
+
+  <h4 style="margin-top:20px;">業務内容一覧(社内・見積もり・営業など)</h4>
+  <div id="clientTaskTypeChips"></div>
+  <div class="addRow"><input type="text" id="newTaskTypeInput" placeholder="例:見積もり"><button onclick="addTaskType()">追加</button></div>
 </div>
 </div>
 
@@ -283,11 +294,6 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div class="searchBoxWrap">
     <input type="text" id="companyInput" placeholder="会社名を入力(取引先一覧から候補が出ます)" autocomplete="off">
     <div class="searchSuggest" id="companySuggest"></div>
-  </div>
-
-  <div id="entryPatternWrap" style="display:none;">
-    <label>引き取り内容を選択(タップで自動入力)</label>
-    <div class="timeTypeRow" id="entryPatternButtons"></div>
   </div>
 
   <label>電話番号</label>
@@ -339,6 +345,35 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 </div>
 </div>
 
+<!-- 追加/編集(業務) -->
+<div class="overlay" id="taskModal">
+<div class="sheet">
+  <div class="closeBtn" onclick="closeModal('taskModal')">閉じる ✕</div>
+  <h2 id="taskModalTitle">業務を追加</h2>
+  <input type="hidden" id="editTaskId">
+
+  <label>内容を選択</label>
+  <div class="timeTypeRow" id="taskTypeButtons"></div>
+
+  <label>作業員(複数可)</label>
+  <div>
+    <button type="button" class="shuhinToggle" id="taskWorkersToggleBtn" onclick="toggleTaskWorkersPanel()">作業員を選択 ▾</button>
+    <div class="checkrow shuhinPanel" id="taskWorkersChecks"></div>
+  </div>
+
+  <label>メモ</label>
+  <textarea id="taskNotesInput" placeholder="例:〇〇会社へ見積もり"></textarea>
+
+  <div class="btnrow">
+    <button class="secondary" onclick="closeModal('taskModal')">キャンセル</button>
+    <button class="primary" onclick="saveTask()">保存</button>
+  </div>
+  <div class="btnrow" id="deleteTaskRow" style="display:none;">
+    <button class="danger" onclick="deleteTask()">この業務を削除</button>
+  </div>
+</div>
+</div>
+
 <!-- 追加/編集(出荷) -->
 <div class="overlay" id="shukkaModal">
 <div class="sheet">
@@ -380,6 +415,23 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 </div>
 </div>
 
+<!-- 月間集計 -->
+<div class="overlay" id="monthlySummaryModal">
+<div class="sheet">
+  <div class="closeBtn" onclick="closeModal('monthlySummaryModal')">閉じる ✕</div>
+  <h2>月間集計</h2>
+  <label>集計する月</label>
+  <input type="month" id="monthlySummaryPicker">
+  <div class="btnrow">
+    <button class="primary" onclick="runMonthlySummary()">集計する</button>
+  </div>
+  <div id="monthlySummaryResult"></div>
+  <div class="btnrow" id="monthlySummaryPrintRow" style="display:none;">
+    <button class="secondary" onclick="printMonthlySummary()">印刷</button>
+  </div>
+</div>
+</div>
+
 <!-- 取引先詳細 -->
 <div class="overlay" id="companyDetailModal">
 <div class="sheet">
@@ -389,9 +441,10 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div class="detailRow"><div class="label">担当者</div><div id="cdContact"></div></div>
   <div class="detailRow"><div class="label">担当者電話</div><div id="cdContactPhone"></div></div>
   <div class="detailRow"><div class="label">回収物</div><div id="cdShuhin"></div></div>
+  <div class="detailRow"><div class="label">持ち物</div><div id="cdItems"></div></div>
+  <div class="detailRow"><div class="label">ETC使用</div><div id="cdEtc"></div></div>
+  <div class="detailRow"><div class="label">マニフェスト</div><div id="cdManifest"></div></div>
   <div class="detailRow"><div class="label">備考</div><div id="cdNotes"></div></div>
-  <h3 style="border-top:1px solid #eee;padding-top:14px;">引き取りパターン</h3>
-  <div id="cdPatterns"></div>
   <div class="btnrow">
     <button class="secondary" onclick="openEditClientFromDetail()">編集</button>
   </div>
@@ -428,12 +481,46 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
     </div>
   </div>
 
-  <label>備考(全体)</label>
-  <textarea id="clientNotesInput"></textarea>
+  <label>持ち物</label>
+  <div class="addRow"><span style="flex:1;">フレコン(枚)</span><input type="number" id="clientQtyFlecon" style="width:90px;" min="0"></div>
+  <div class="addRow"><span style="flex:1;">穴あきドラム(本)</span><input type="number" id="clientQtyAnaAki" style="width:90px;" min="0"></div>
+  <div class="addRow"><span style="flex:1;">穴なしドラム(本)</span><input type="number" id="clientQtyAnaNashi" style="width:90px;" min="0"></div>
+  <div class="addRow"><span style="flex:1;">箱(個)</span><input type="number" id="clientQtyBox" style="width:90px;" min="0"></div>
 
-  <label>引き取りパターン(複数登録できます・配車ボードで選べます)</label>
-  <div id="clientPatternsList"></div>
-  <div class="addRow"><button type="button" style="width:100%;justify-content:center;" onclick="addClientPattern()">＋ パターンを追加</button></div>
+  <label>ETC使用</label>
+  <div class="timeTypeRow">
+    <button type="button" id="clientEtcNashi" onclick="selectClientEtc('なし')">なし</button>
+    <button type="button" id="clientEtcAri" onclick="selectClientEtc('あり')">あり</button>
+  </div>
+  <div id="clientEtcCountWrap" style="display:none;">
+    <label>ETC必要枚数</label>
+    <select id="clientEtcCountInput">
+      <option value="1枚">1枚</option><option value="2枚">2枚</option><option value="3枚">3枚</option>
+      <option value="4枚">4枚</option><option value="5枚">5枚</option><option value="6枚">6枚</option>
+      <option value="7枚">7枚</option><option value="8枚">8枚</option><option value="9枚">9枚</option><option value="10枚">10枚</option>
+    </select>
+  </div>
+
+  <label>マニフェスト</label>
+  <div class="timeTypeRow">
+    <button type="button" id="clientManifestNashi" onclick="selectClientManifest('なし')">なし</button>
+    <button type="button" id="clientManifestAri" onclick="selectClientManifest('あり')">あり</button>
+  </div>
+  <div id="clientManifestDigitalWrap" style="display:none;">
+    <label class="inlineChk" style="display:flex;align-items:center;gap:6px;font-size:14px;margin-top:10px;">
+      <input type="checkbox" id="clientManifestDigitalInput"> 電子マニフェスト対応
+    </label>
+    <label>マニフェスト内容</label>
+    <button type="button" class="shuhinToggle" id="clientManifestTypeToggleBtn" onclick="toggleClientManifestTypePanel()">マニフェスト内容を選択 ▾</button>
+    <div class="checkrow shuhinPanel" id="clientManifestTypeChecks"></div>
+    <div class="addRow">
+      <input type="text" id="clientManifestTypeQuickInput" placeholder="候補にない内容を追加">
+      <button type="button" onclick="quickAddClientManifestType()">追加</button>
+    </div>
+  </div>
+
+  <label>備考</label>
+  <textarea id="clientNotesInput"></textarea>
 
   <div class="btnrow">
     <button class="secondary" onclick="closeModal('clientModal')">キャンセル</button>
@@ -482,6 +569,8 @@ let shuhinOptions = [];
 let manifestTypeList = [];
 let shukkaDestinations = [];
 let shukkaItemsList = [];
+let taskTypes = [];
+let taskEntries = [];
 let workerProfiles = {};
 let boardEntries = [];
 let shukkaEntries = [];
@@ -490,6 +579,7 @@ let boardAttendanceData = {};
 let boardUnsub = null;
 let boardAttendanceUnsub = null;
 let shukkaUnsub = null;
+let taskUnsub = null;
 let boardFreeNoteUnsub = null;
 let activeMainTab = 'board';
 let currentDetailClientId = null;
@@ -511,6 +601,12 @@ return parts.length ? parts.join('・') : 'なし';
 }
 function etcLabelFor(c) {
 return c && c.etcUse === 'あり' ? ('あり(' + (c.etcCount || '') + ')') : 'なし';
+}
+function manifestLabelFull(c) {
+if (!c || c.manifestHas !== 'あり') return 'なし';
+let text = 'あり' + (c.manifestDigital ? '(電子マニフェスト対応)' : '');
+if (c.manifestTypeSelected && c.manifestTypeSelected.length) text += ' / ' + c.manifestTypeSelected.join('・');
+return text;
 }
 function findClientById(id) {
 return clients.find(x => x.id === id) || clientsJomu.find(x => x.id === id);
@@ -552,6 +648,7 @@ subscribeList('shuhinOptions', v => shuhinOptions = v);
 subscribeList('manifestTypes', v => manifestTypeList = v);
 subscribeList('shukkaDestinations', v => shukkaDestinations = v);
 subscribeList('shukkaItems', v => shukkaItemsList = v);
+subscribeList('taskTypes', v => taskTypes = v);
 db.collection('pickupSettings').doc('workerBentoProfiles').onSnapshot(doc => {
 workerProfiles = (doc.exists && doc.data().profiles) ? doc.data().profiles : {};
 ensureWorkerProfilesExist();
@@ -606,6 +703,7 @@ if (boardAttendanceUnsub) boardAttendanceUnsub();
 boardAttendanceUnsub = db.collection('bentoDaily').doc(currentDate).onSnapshot(doc => {
   boardAttendanceData = (doc.exists && doc.data().entries) ? doc.data().entries : {};
   renderAttendanceBoxes();
+  if (activeMainTab === 'settings') renderSettingsLists();
 });
 if (shukkaUnsub) shukkaUnsub();
 shukkaUnsub = db.collection('shukkaBoard').where('date', '==', currentDate).onSnapshot(snapshot => {
@@ -613,6 +711,13 @@ shukkaUnsub = db.collection('shukkaBoard').where('date', '==', currentDate).onSn
   snapshot.forEach(doc => shukkaEntries.push({id: doc.id, ...doc.data()}));
   shukkaEntries.sort((a,b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
   renderShukkaBox();
+});
+if (taskUnsub) taskUnsub();
+taskUnsub = db.collection('taskBoard').where('date', '==', currentDate).onSnapshot(snapshot => {
+  taskEntries = [];
+  snapshot.forEach(doc => taskEntries.push({id: doc.id, ...doc.data()}));
+  taskEntries.sort((a,b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
+  renderTaskBox();
 });
 if (boardFreeNoteUnsub) boardFreeNoteUnsub();
 boardFreeNoteUnsub = db.collection('boardFreeNotes').doc(currentDate).onSnapshot(doc => {
@@ -669,10 +774,12 @@ db.collection('haishaBoard').doc(entryId).update({status: newStatus});
 function attendanceBlockHtml(name, idx) {
 const state = boardAttendanceData[name] || {offType: 'none'};
 const labels = {none: '出勤', am_off: '午前休み', pm_off: '午後休み', full_off: '1日休み'};
+const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
 const btnClass = state.offType === 'none' ? '' : 'off';
 const btnLabel = state.offType === 'none' ? '休み' : labels[state.offType];
+const teamTag = state.team ? ' <span style="color:#1D3557;font-size:11px;font-weight:bold;">[' + teamLabels[state.team] + ']</span>' : '';
 return '<div class="attendBlock">' +
-  '<div class="attendRow"><span>' + name + '</span>' +
+  '<div class="attendRow"><span>' + name + teamTag + '</span>' +
   '<button class="miniOffBtn ' + btnClass + '" onclick="toggleOffSelector(' + idx + ')">' + btnLabel + '</button></div>' +
   '<div class="offSelectorRow" id="offSel_' + idx + '" style="display:none;">' +
     ['none','am_off','pm_off','full_off'].map(key =>
@@ -687,7 +794,8 @@ if (!el) return;
 el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
 }
 function setWorkerOffTypeAndCollapse(name, offType, idx) {
-const merged = Object.assign({}, boardAttendanceData, {[name]: {offType}});
+const existing = boardAttendanceData[name] || {};
+const merged = Object.assign({}, boardAttendanceData, {[name]: {offType, team: existing.team || null}});
 db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true});
 const el = document.getElementById('offSel_' + idx);
 if (el) el.style.display = 'none';
@@ -903,20 +1011,99 @@ db.collection('shukkaBoard').doc(editId).delete()
   .catch(err => alert('削除に失敗しました: ' + err.message));
 }
 
+// ---- 業務(社内/見積もり/営業など) サイドボックス ----
+function renderTaskBox() {
+const box = document.getElementById('taskListBox');
+if (!box) return;
+if (!taskEntries.length) { box.innerHTML = '<div style="color:#999;font-size:13px;">まだ業務予定がありません</div>'; return; }
+box.innerHTML = taskEntries.map(t => {
+  let html = '<div class="shukkaItem" onclick="openEditTask(\'' + t.id + '\')">';
+  html += '<span style="font-weight:bold;font-size:14px;color:#1D3557;">' + (t.taskType || '(内容未選択)') + '</span>';
+  if (t.workers && t.workers.length) html += '<div class="rowLine" style="font-size:13px;">👷 ' + arrLabel(t.workers) + '</div>';
+  if (t.notes) html += '<div class="rowLine" style="font-size:13px;">📝 ' + t.notes + '</div>';
+  html += '</div>';
+  return html;
+}).join('');
+}
+let selectedTaskType = '';
+function selectTaskType(v) {
+selectedTaskType = v;
+document.querySelectorAll('#taskTypeButtons button').forEach(btn => {
+  btn.classList.toggle('active', btn.dataset.value === v);
+});
+}
+function renderTaskTypeButtons() {
+const wrap = document.getElementById('taskTypeButtons');
+if (!taskTypes.length) { wrap.innerHTML = '<span style="color:#999;font-size:13px;">業務内容一覧が未登録です(取引先一覧タブから登録できます)</span>'; return; }
+wrap.innerHTML = taskTypes.map(name =>
+  '<button type="button" data-value="' + name.replace(/"/g,'&quot;') + '" onclick="selectTaskType(\'' + name.replace(/'/g,"\\'") + '\')">' + name + '</button>'
+).join('');
+}
+function fillTaskWorkersChecks(selected) {
+const el = document.getElementById('taskWorkersChecks');
+if (!collectorList.length) { el.innerHTML = '<span style="color:#999;font-size:13px;">作業員一覧が未登録です</span>'; return; }
+el.innerHTML = collectorList.map(name => '<label><input type="checkbox" class="taskWorkerCk" value="' + name + '" ' + (selected.includes(name) ? 'checked' : '') + '> ' + name + '</label>').join('');
+}
+function toggleTaskWorkersPanel() {
+const panel = document.getElementById('taskWorkersChecks');
+panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'flex' : 'none';
+}
+function openAddTask() {
+document.getElementById('taskModalTitle').textContent = '業務を追加';
+document.getElementById('editTaskId').value = '';
+document.getElementById('deleteTaskRow').style.display = 'none';
+renderTaskTypeButtons();
+selectTaskType('');
+fillTaskWorkersChecks([]);
+document.getElementById('taskWorkersChecks').style.display = 'none';
+document.getElementById('taskNotesInput').value = '';
+document.getElementById('taskModal').classList.add('show');
+}
+function openEditTask(id) {
+const t = taskEntries.find(x => x.id === id);
+if (!t) return;
+document.getElementById('taskModalTitle').textContent = '業務を編集';
+document.getElementById('editTaskId').value = t.id;
+document.getElementById('deleteTaskRow').style.display = 'flex';
+renderTaskTypeButtons();
+selectTaskType(t.taskType || '');
+fillTaskWorkersChecks(t.workers || []);
+document.getElementById('taskWorkersChecks').style.display = 'none';
+document.getElementById('taskNotesInput').value = t.notes || '';
+document.getElementById('taskModal').classList.add('show');
+}
+function saveTask() {
+if (!selectedTaskType) { alert('内容を選択してください'); return; }
+const workers = Array.from(document.querySelectorAll('.taskWorkerCk:checked')).map(el => el.value);
+const data = {
+  date: currentDate,
+  taskType: selectedTaskType,
+  workers,
+  notes: document.getElementById('taskNotesInput').value.trim()
+};
+const editId = document.getElementById('editTaskId').value;
+if (editId) {
+  db.collection('taskBoard').doc(editId).update(data)
+    .then(() => closeModal('taskModal'))
+    .catch(err => alert('保存に失敗しました: ' + err.message));
+} else {
+  data.createdAtMs = Date.now();
+  data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+  db.collection('taskBoard').add(data)
+    .then(() => closeModal('taskModal'))
+    .catch(err => alert('保存に失敗しました: ' + err.message));
+}
+}
+function deleteTask() {
+const editId = document.getElementById('editTaskId').value;
+if (!editId) return;
+if (!confirm('この業務を削除しますか?')) return;
+db.collection('taskBoard').doc(editId).delete()
+  .then(() => closeModal('taskModal'))
+  .catch(err => alert('削除に失敗しました: ' + err.message));
+}
+
 // ---- 取引先詳細 ----
-function patternSummaryText(p) {
-const parts = [];
-if (p.items) {
-  if (p.items.flecon) parts.push('フレコン' + p.items.flecon + '枚');
-  if (p.items.anaAkiDrum) parts.push('穴あきドラム' + p.items.anaAkiDrum + '本');
-  if (p.items.anaNashiDrum) parts.push('穴なしドラム' + p.items.anaNashiDrum + '本');
-  if (p.items.box) parts.push('箱' + p.items.box + '個');
-}
-if (p.etcUse === 'あり') parts.push('ETC' + (p.etcCount || ''));
-if (p.manifestHas === 'あり') parts.push('マニフェストあり' + (p.manifestDigital ? '(電子対応)' : ''));
-if (p.notes) parts.push(p.notes);
-return parts.length ? parts.join('・') : '内容なし';
-}
 function showCompanyDetail(clientId) {
 const c = findClientById(clientId);
 if (!c) { alert('取引先の情報が見つかりませんでした'); return; }
@@ -926,11 +1113,10 @@ document.getElementById('cdAddress').textContent = c.address || 'なし';
 document.getElementById('cdContact').textContent = c.contactName || 'なし';
 document.getElementById('cdContactPhone').textContent = c.contactPhone || 'なし';
 document.getElementById('cdShuhin').textContent = arrLabel(c.shuhinSelected) || 'なし';
+document.getElementById('cdItems').textContent = itemsLabelFor(c.items);
+document.getElementById('cdEtc').textContent = etcLabelFor(c);
+document.getElementById('cdManifest').textContent = manifestLabelFull(c);
 document.getElementById('cdNotes').textContent = c.notes || 'なし';
-const patterns = c.patterns || [];
-document.getElementById('cdPatterns').innerHTML = patterns.length
-  ? patterns.map((p, i) => '<div class="detailRow"><div class="label">' + (p.label || ('パターン' + (i+1))) + '</div><div>' + patternSummaryText(p) + '</div></div>').join('')
-  : '<div style="color:#999;font-size:14px;">パターン未登録</div>';
 document.getElementById('companyDetailModal').classList.add('show');
 }
 function openEditClientFromDetail() {
@@ -942,15 +1128,15 @@ switchMainTab('clients');
 openEditClient(currentDetailClientId);
 }
 function buildClientShareText(c) {
-let text = '【取引先情報】\n会社名:' + (c.name || '') +
+return '【取引先情報】\n会社名:' + (c.name || '') +
   '\n住所:' + (c.address || 'なし') +
   '\n担当者:' + (c.contactName || 'なし') +
   '\n担当者電話:' + (c.contactPhone || 'なし') +
   '\n回収物:' + (arrLabel(c.shuhinSelected) || 'なし') +
+  '\n持ち物:' + itemsLabelFor(c.items) +
+  '\nETC使用:' + etcLabelFor(c) +
+  '\nマニフェスト:' + manifestLabelFull(c) +
   '\n備考:' + (c.notes || 'なし');
-const patterns = c.patterns || [];
-patterns.forEach((p, i) => { text += '\n【' + (p.label || ('パターン' + (i+1))) + '】' + patternSummaryText(p); });
-return text;
 }
 function shareClientDetailToLine() {
 const c = findClientById(currentDetailClientId);
@@ -972,10 +1158,6 @@ w.document.close();
 function printClientDetail() {
 const c = findClientById(currentDetailClientId);
 if (!c) return;
-const patterns = c.patterns || [];
-const patternRows = patterns.length
-  ? patterns.map((p, i) => '<tr><td class="label">' + (p.label || ('パターン' + (i+1))) + '</td><td>' + patternSummaryText(p) + '</td></tr>').join('')
-  : '<tr><td class="label">パターン</td><td>未登録</td></tr>';
 const w = window.open('', '_blank');
 w.document.write(
   '<html><head><meta charset="UTF-8"><title>' + c.name + '</title>' +
@@ -987,8 +1169,10 @@ w.document.write(
   '<tr><td class="label">担当者</td><td>' + (c.contactName || '') + '</td></tr>' +
   '<tr><td class="label">担当者電話</td><td>' + (c.contactPhone || '') + '</td></tr>' +
   '<tr><td class="label">回収物</td><td>' + arrLabel(c.shuhinSelected) + '</td></tr>' +
+  '<tr><td class="label">持ち物</td><td>' + itemsLabelFor(c.items) + '</td></tr>' +
+  '<tr><td class="label">ETC使用</td><td>' + etcLabelFor(c) + '</td></tr>' +
+  '<tr><td class="label">マニフェスト</td><td>' + manifestLabelFull(c) + '</td></tr>' +
   '<tr><td class="label">備考</td><td>' + (c.notes || '') + '</td></tr>' +
-  patternRows +
   '</table><button onclick="window.close()" style="width:100%;padding:14px;border:none;border-radius:8px;background:#eee;color:#333;font-size:15px;margin-top:16px;">閉じる</button>' +
   '<scr' + 'ipt>window.print();<\/scr' + 'ipt></body></html>'
 );
@@ -1040,7 +1224,6 @@ document.getElementById('truckInput').value = '';
 document.getElementById('belongingsInput').value = '';
 selectEtc('なし');
 document.getElementById('etcCountInput').value = '1枚';
-showEntryPatternButtons([]);
 fillWorkersChecks([]);
 document.getElementById('workersChecks').style.display = 'none';
 document.getElementById('entryModal').classList.add('show');
@@ -1064,13 +1247,6 @@ document.getElementById('truckInput').value = e.truck || '';
 document.getElementById('belongingsInput').value = e.belongings || '';
 selectEtc(e.etcUse === 'あり' ? 'あり' : 'なし');
 document.getElementById('etcCountInput').value = e.etcCount || '1枚';
-if (e.companyId) {
-  const source = (e.listType || 'normal') === 'jomu' ? clientsJomu : clients;
-  const c = source.find(x => x.id === e.companyId);
-  showEntryPatternButtons((c && c.patterns) || []);
-} else {
-  showEntryPatternButtons([]);
-}
 fillWorkersChecks(e.workers || []);
 document.getElementById('workersChecks').style.display = 'none';
 document.getElementById('entryModal').classList.add('show');
@@ -1132,7 +1308,6 @@ if (!matches.length) { box.classList.remove('show'); return; }
 box.innerHTML = matches.map(c => '<div class="sItem" onclick="selectCompanySuggest(\'' + c.id + '\')">' + c.name + '</div>').join('');
 box.classList.add('show');
 }
-let currentEntryClientPatterns = [];
 function selectCompanySuggest(clientId) {
 const source = selectedEntryListType === 'jomu' ? clientsJomu : clients;
 const c = source.find(x => x.id === clientId);
@@ -1144,27 +1319,15 @@ const field = document.getElementById('pickupPlaceInput');
 if (!field.value.trim() && c.address) field.value = c.address;
 const phoneField = document.getElementById('phoneInput');
 if (!phoneField.value.trim() && c.contactPhone) phoneField.value = c.contactPhone;
-showEntryPatternButtons(c.patterns || []);
-}
-function showEntryPatternButtons(patterns) {
-currentEntryClientPatterns = patterns;
-const wrap = document.getElementById('entryPatternWrap');
-if (!patterns.length) { wrap.style.display = 'none'; return; }
-document.getElementById('entryPatternButtons').innerHTML = patterns.map((p, i) =>
-  '<button type="button" onclick="applyClientPattern(' + i + ')">' + (p.label || ('パターン' + (i+1))) + '</button>'
-).join('');
-wrap.style.display = 'block';
-}
-function applyClientPattern(idx) {
-const p = currentEntryClientPatterns[idx];
-if (!p) return;
-if (p.etcUse === 'あり') {
+if (c.etcUse === 'あり') {
   selectEtc('あり');
-  document.getElementById('etcCountInput').value = p.etcCount || '1枚';
-} else {
-  selectEtc('なし');
+  document.getElementById('etcCountInput').value = c.etcCount || '1枚';
 }
-document.getElementById('belongingsInput').value = patternSummaryText(p) === '内容なし' ? '' : patternSummaryText(p);
+const belongingsField = document.getElementById('belongingsInput');
+if (!belongingsField.value.trim()) {
+  const itemsText = itemsLabelFor(c.items);
+  if (itemsText && itemsText !== 'なし') belongingsField.value = itemsText;
+}
 }
 
 // 車 入力候補
@@ -1288,6 +1451,94 @@ w.document.write(
 w.document.close();
 }
 
+// ---- 月間集計 ----
+let lastMonthlySummary = null;
+function openMonthlySummary() {
+const picker = document.getElementById('monthlySummaryPicker');
+if (!picker.value) {
+  const parts = currentDate.split('-');
+  picker.value = parts[0] + '-' + parts[1];
+}
+document.getElementById('monthlySummaryResult').innerHTML = '';
+document.getElementById('monthlySummaryPrintRow').style.display = 'none';
+document.getElementById('monthlySummaryModal').classList.add('show');
+}
+function monthRange(monthVal) {
+const parts = monthVal.split('-').map(Number);
+const y = parts[0], m = parts[1];
+const start = monthVal + '-01';
+const lastDay = new Date(y, m, 0).getDate();
+const end = monthVal + '-' + String(lastDay).padStart(2, '0');
+return {start, end};
+}
+function runMonthlySummary() {
+const monthVal = document.getElementById('monthlySummaryPicker').value;
+if (!monthVal) { alert('月を選択してください'); return; }
+const {start, end} = monthRange(monthVal);
+const resultDiv = document.getElementById('monthlySummaryResult');
+resultDiv.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">集計中...</div>';
+Promise.all([
+  db.collection('haishaBoard').where('date', '>=', start).where('date', '<=', end).get(),
+  db.collection('shukkaBoard').where('date', '>=', start).where('date', '<=', end).get()
+]).then(([boardSnap, shukkaSnap]) => {
+  const boardDocs = [];
+  boardSnap.forEach(d => boardDocs.push(d.data()));
+  const shukkaDocs = [];
+  shukkaSnap.forEach(d => shukkaDocs.push(d.data()));
+
+  function groupByCompany(docs, listTypeFilter) {
+    const list = listTypeFilter ? docs.filter(d => (d.listType || 'normal') === listTypeFilter) : docs;
+    const byCompany = {};
+    list.forEach(d => {
+      const key = d.companyName || '(会社名未入力)';
+      byCompany[key] = (byCompany[key] || 0) + 1;
+    });
+    return Object.keys(byCompany).sort((a,b) => byCompany[b] - byCompany[a]).map(name => ({name, count: byCompany[name]}));
+  }
+  const normalRows = groupByCompany(boardDocs, 'normal');
+  const jomuRows = groupByCompany(boardDocs, 'jomu');
+  const shukkaRows = groupByCompany(shukkaDocs, null);
+
+  lastMonthlySummary = {monthVal, normalRows, jomuRows, shukkaRows, boardTotal: boardDocs.length, shukkaTotal: shukkaDocs.length};
+
+  function rowsHtml(rows) {
+    if (!rows.length) return '<div style="color:#999;font-size:13px;">記録なし</div>';
+    return rows.map(r => '<div class="detailRow" style="margin-bottom:4px;"><span style="font-weight:bold;">' + r.name + '</span> ー ' + r.count + '回</div>').join('');
+  }
+  resultDiv.innerHTML =
+    '<h3 style="border-top:none;color:#1D3557;">' + monthVal + '(配車合計 ' + boardDocs.length + '件 / 出荷合計 ' + shukkaDocs.length + '件)</h3>' +
+    '<h4 style="color:#1D3557;">配車:通常</h4>' + rowsHtml(normalRows) +
+    '<h4 style="color:#1D3557;margin-top:14px;">配車:常務</h4>' + rowsHtml(jomuRows) +
+    '<h4 style="color:#1D3557;margin-top:14px;">出荷</h4>' + rowsHtml(shukkaRows);
+  document.getElementById('monthlySummaryPrintRow').style.display = 'flex';
+}).catch(err => {
+  resultDiv.innerHTML = '<div style="color:#c0392b;">集計に失敗しました: ' + err.message + '</div>';
+});
+}
+function printMonthlySummary() {
+if (!lastMonthlySummary) return;
+const {monthVal, normalRows, jomuRows, shukkaRows, boardTotal, shukkaTotal} = lastMonthlySummary;
+function tableHtml(title, rows) {
+  const rowsHtml = rows.length
+    ? rows.map(r => '<tr><td>' + r.name + '</td><td>' + r.count + '</td></tr>').join('')
+    : '<tr><td colspan="2">記録なし</td></tr>';
+  return '<h2>' + title + '</h2><table><tr><th>会社名</th><th>回数</th></tr>' + rowsHtml + '</table>';
+}
+const w = window.open('', '_blank');
+w.document.write(
+  '<html><head><meta charset="UTF-8"><title>月間集計 ' + monthVal + '</title>' +
+  '<style>body{font-family:sans-serif;padding:30px;} h1{border-bottom:2px solid #1D3557;padding-bottom:8px;} h2{color:#1D3557;margin-top:24px;}' +
+  'table{border-collapse:collapse;width:100%;margin-top:10px;} td,th{border:1px solid #ccc;padding:8px 10px;font-size:13px;text-align:left;} th{background:#f0f0f0;}</style></head><body>' +
+  '<h1>月間集計:' + monthVal + '(配車合計 ' + boardTotal + '件 / 出荷合計 ' + shukkaTotal + '件)</h1>' +
+  tableHtml('配車:通常', normalRows) +
+  tableHtml('配車:常務', jomuRows) +
+  tableHtml('出荷', shukkaRows) +
+  '<button onclick="window.close()" style="width:100%;padding:14px;border:none;border-radius:8px;background:#eee;color:#333;font-size:15px;margin-top:16px;">閉じる</button>' +
+  '<scr' + 'ipt>window.print();<\/scr' + 'ipt></body></html>'
+);
+w.document.close();
+}
+
 // ---------- 取引先一覧 ----------
 function switchClientMode(mode) {
 clientListMode = mode;
@@ -1329,50 +1580,41 @@ db.collection('pickupSettings').doc('shuhinOptions').set({names: newList}).then(
   input.value = '';
 });
 }
-
-// ---- 引き取りパターン(取引先ごとに複数登録) ----
-let editingPatterns = [];
-function newEmptyPattern() {
-return {label: '', items: {flecon: 0, anaAkiDrum: 0, anaNashiDrum: 0, box: 0}, etcUse: 'なし', etcCount: '1枚', manifestHas: 'なし', manifestDigital: false, notes: ''};
+function fillClientManifestTypeChecks(selected) {
+const el = document.getElementById('clientManifestTypeChecks');
+if (!manifestTypeList.length) { el.innerHTML = '<span style="color:#999;font-size:13px;">マニフェスト内容一覧が未登録です</span>'; return; }
+el.innerHTML = manifestTypeList.map(name => '<label><input type="checkbox" class="clientManifestTypeCk" value="' + name + '" ' + (selected.includes(name) ? 'checked' : '') + '> ' + name + '</label>').join('');
 }
-function renderClientPatternsList() {
-const div = document.getElementById('clientPatternsList');
-if (!editingPatterns.length) { div.innerHTML = '<div style="color:#999;font-size:13px;">まだパターンがありません。「+パターンを追加」から登録してください。</div>'; return; }
-const etcOptions = ['1枚','2枚','3枚','4枚','5枚','6枚','7枚','8枚','9枚','10枚'];
-div.innerHTML = editingPatterns.map((p, idx) => {
-  return '<div class="card" style="margin-bottom:10px;">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
-    '<input type="text" value="' + (p.label || '').replace(/"/g,'&quot;') + '" placeholder="パターン名(例:通常)" style="font-weight:bold;" oninput="updatePatternField(' + idx + ',\'label\',this.value)">' +
-    '<button class="delX" onclick="removeClientPattern(' + idx + ')">削除</button>' +
-    '</div>' +
-    '<div class="addRow"><span style="flex:1;">フレコン(枚)</span><input type="number" min="0" value="' + (p.items.flecon || '') + '" style="width:80px;" oninput="updatePatternItem(' + idx + ',\'flecon\',this.value)"></div>' +
-    '<div class="addRow"><span style="flex:1;">穴あきドラム(本)</span><input type="number" min="0" value="' + (p.items.anaAkiDrum || '') + '" style="width:80px;" oninput="updatePatternItem(' + idx + ',\'anaAkiDrum\',this.value)"></div>' +
-    '<div class="addRow"><span style="flex:1;">穴なしドラム(本)</span><input type="number" min="0" value="' + (p.items.anaNashiDrum || '') + '" style="width:80px;" oninput="updatePatternItem(' + idx + ',\'anaNashiDrum\',this.value)"></div>' +
-    '<div class="addRow"><span style="flex:1;">箱(個)</span><input type="number" min="0" value="' + (p.items.box || '') + '" style="width:80px;" oninput="updatePatternItem(' + idx + ',\'box\',this.value)"></div>' +
-    '<label>ETC使用</label>' +
-    '<div class="timeTypeRow">' +
-    '<button type="button" class="' + (p.etcUse !== 'あり' ? 'active' : '') + '" onclick="setPatternEtc(' + idx + ',\'なし\')">なし</button>' +
-    '<button type="button" class="' + (p.etcUse === 'あり' ? 'active' : '') + '" onclick="setPatternEtc(' + idx + ',\'あり\')">あり</button>' +
-    '</div>' +
-    (p.etcUse === 'あり' ? '<select onchange="updatePatternField(' + idx + ',\'etcCount\',this.value)">' + etcOptions.map(v => '<option value="' + v + '" ' + (p.etcCount === v ? 'selected' : '') + '>' + v + '</option>').join('') + '</select>' : '') +
-    '<label>マニフェスト</label>' +
-    '<div class="timeTypeRow">' +
-    '<button type="button" class="' + (p.manifestHas !== 'あり' ? 'active' : '') + '" onclick="setPatternManifest(' + idx + ',\'なし\')">なし</button>' +
-    '<button type="button" class="' + (p.manifestHas === 'あり' ? 'active' : '') + '" onclick="setPatternManifest(' + idx + ',\'あり\')">あり</button>' +
-    '</div>' +
-    (p.manifestHas === 'あり' ? '<label class="inlineChk" style="display:flex;gap:6px;align-items:center;margin-top:8px;"><input type="checkbox" ' + (p.manifestDigital ? 'checked' : '') + ' onchange="updatePatternField(' + idx + ',\'manifestDigital\',this.checked)"> 電子マニフェスト対応</label>' : '') +
-    '<label>備考(このパターンの)</label>' +
-    '<textarea oninput="updatePatternField(' + idx + ',\'notes\',this.value)">' + (p.notes || '') + '</textarea>' +
-    '</div>';
-}).join('');
+function toggleClientManifestTypePanel() {
+const panel = document.getElementById('clientManifestTypeChecks');
+panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'flex' : 'none';
 }
-function addClientPattern() { editingPatterns.push(newEmptyPattern()); renderClientPatternsList(); }
-function removeClientPattern(idx) { editingPatterns.splice(idx, 1); renderClientPatternsList(); }
-function updatePatternField(idx, field, value) { if (editingPatterns[idx]) editingPatterns[idx][field] = value; }
-function updatePatternItem(idx, key, value) { if (editingPatterns[idx]) editingPatterns[idx].items[key] = parseInt(value) || 0; }
-function setPatternEtc(idx, v) { if (editingPatterns[idx]) { editingPatterns[idx].etcUse = v; renderClientPatternsList(); } }
-function setPatternManifest(idx, v) { if (editingPatterns[idx]) { editingPatterns[idx].manifestHas = v; renderClientPatternsList(); } }
-
+function quickAddClientManifestType() {
+const input = document.getElementById('clientManifestTypeQuickInput');
+const name = input.value.trim();
+if (!name) return;
+const checkedNow = Array.from(document.querySelectorAll('.clientManifestTypeCk:checked')).map(el => el.value);
+const newList = manifestTypeList.includes(name) ? manifestTypeList : manifestTypeList.concat([name]);
+db.collection('pickupSettings').doc('manifestTypes').set({names: newList}).then(() => {
+  fillClientManifestTypeChecks(checkedNow.concat([name]));
+  document.getElementById('clientManifestTypeChecks').style.display = 'flex';
+  input.value = '';
+});
+}
+let selectedClientManifest = 'なし';
+let selectedClientEtc = 'なし';
+function selectClientManifest(v) {
+selectedClientManifest = v;
+document.getElementById('clientManifestNashi').classList.toggle('active', v === 'なし');
+document.getElementById('clientManifestAri').classList.toggle('active', v === 'あり');
+document.getElementById('clientManifestDigitalWrap').style.display = (v === 'あり') ? 'block' : 'none';
+}
+function selectClientEtc(v) {
+selectedClientEtc = v;
+document.getElementById('clientEtcNashi').classList.toggle('active', v === 'なし');
+document.getElementById('clientEtcAri').classList.toggle('active', v === 'あり');
+document.getElementById('clientEtcCountWrap').style.display = (v === 'あり') ? 'block' : 'none';
+}
 function openAddClient() {
 document.getElementById('clientModalTitle').textContent = '取引先を追加(' + (clientListMode === 'jomu' ? '常務' : '通常') + ')';
 document.getElementById('editClientId').value = '';
@@ -1383,9 +1625,16 @@ document.getElementById('clientContactNameInput').value = '';
 document.getElementById('clientContactPhoneInput').value = '';
 fillClientShuhinChecks([]);
 document.getElementById('clientShuhinChecks').style.display = 'none';
+document.getElementById('clientQtyFlecon').value = '';
+document.getElementById('clientQtyAnaAki').value = '';
+document.getElementById('clientQtyAnaNashi').value = '';
+document.getElementById('clientQtyBox').value = '';
+selectClientEtc('なし');
+document.getElementById('clientEtcCountInput').value = '1枚';
+selectClientManifest('なし');
+document.getElementById('clientManifestDigitalInput').checked = false;
+fillClientManifestTypeChecks([]);
 document.getElementById('clientNotesInput').value = '';
-editingPatterns = [];
-renderClientPatternsList();
 document.getElementById('clientModal').classList.add('show');
 }
 function openEditClient(id) {
@@ -1401,9 +1650,17 @@ document.getElementById('clientContactNameInput').value = c.contactName || '';
 document.getElementById('clientContactPhoneInput').value = c.contactPhone || '';
 fillClientShuhinChecks(c.shuhinSelected || []);
 document.getElementById('clientShuhinChecks').style.display = 'none';
+const items = c.items || {};
+document.getElementById('clientQtyFlecon').value = items.flecon || '';
+document.getElementById('clientQtyAnaAki').value = items.anaAkiDrum || '';
+document.getElementById('clientQtyAnaNashi').value = items.anaNashiDrum || '';
+document.getElementById('clientQtyBox').value = items.box || '';
+selectClientEtc(c.etcUse === 'あり' ? 'あり' : 'なし');
+document.getElementById('clientEtcCountInput').value = c.etcCount || '1枚';
+selectClientManifest(c.manifestHas === 'あり' ? 'あり' : 'なし');
+document.getElementById('clientManifestDigitalInput').checked = !!c.manifestDigital;
+fillClientManifestTypeChecks(c.manifestTypeSelected || []);
 document.getElementById('clientNotesInput').value = c.notes || '';
-editingPatterns = JSON.parse(JSON.stringify(c.patterns || []));
-renderClientPatternsList();
 document.getElementById('clientModal').classList.add('show');
 }
 function saveClient() {
@@ -1415,8 +1672,18 @@ const data = {
   contactName: document.getElementById('clientContactNameInput').value.trim(),
   contactPhone: document.getElementById('clientContactPhoneInput').value.trim(),
   shuhinSelected: Array.from(document.querySelectorAll('.clientShuhinCk:checked')).map(el => el.value),
+  items: {
+    flecon: parseInt(document.getElementById('clientQtyFlecon').value) || 0,
+    anaAkiDrum: parseInt(document.getElementById('clientQtyAnaAki').value) || 0,
+    anaNashiDrum: parseInt(document.getElementById('clientQtyAnaNashi').value) || 0,
+    box: parseInt(document.getElementById('clientQtyBox').value) || 0
+  },
+  etcUse: selectedClientEtc,
+  etcCount: selectedClientEtc === 'あり' ? document.getElementById('clientEtcCountInput').value : '',
+  manifestHas: selectedClientManifest,
+  manifestDigital: selectedClientManifest === 'あり' ? document.getElementById('clientManifestDigitalInput').checked : false,
+  manifestTypeSelected: selectedClientManifest === 'あり' ? Array.from(document.querySelectorAll('.clientManifestTypeCk:checked')).map(el => el.value) : [],
   notes: document.getElementById('clientNotesInput').value.trim(),
-  patterns: editingPatterns,
   updatedAt: firebase.firestore.FieldValue.serverTimestamp()
 };
 const collectionName = clientListMode === 'jomu' ? 'haishaClientsJomu' : 'haishaClients';
@@ -1459,6 +1726,7 @@ renderChips('clientShuhinChips', shuhinOptions, 'removeShuhinOption');
 renderChips('clientManifestChips', manifestTypeList, 'removeManifestTypeOption');
 renderChips('clientShukkaDestChips', shukkaDestinations, 'removeShukkaDestination');
 renderChips('clientShukkaItemChips', shukkaItemsList, 'removeShukkaItemOption');
+renderChips('clientTaskTypeChips', taskTypes, 'removeTaskType');
 }
 function addWorkerFromClientTab() {
 const input = document.getElementById('newClientWorkerInput');
@@ -1518,6 +1786,17 @@ function removeShukkaItemOption(name) {
 if (!confirm(name + 'を出荷品一覧から削除しますか?')) return;
 db.collection('pickupSettings').doc('shukkaItems').set({names: shukkaItemsList.filter(n => n !== name)});
 }
+function addTaskType() {
+const input = document.getElementById('newTaskTypeInput');
+const name = input.value.trim();
+if (!name) return;
+const newList = taskTypes.includes(name) ? taskTypes : taskTypes.concat([name]);
+db.collection('pickupSettings').doc('taskTypes').set({names: newList}).then(() => input.value = '');
+}
+function removeTaskType(name) {
+if (!confirm(name + 'を業務内容一覧から削除しますか?')) return;
+db.collection('pickupSettings').doc('taskTypes').set({names: taskTypes.filter(n => n !== name)});
+}
 
 // ---------- 設定(作業員のお弁当設定) ----------
 function renderSettingsLists() {
@@ -1527,14 +1806,20 @@ if (!collectorList.length) {
   return;
 }
 const bentoLabels = {rice: 'お弁当', side: 'おかずのみ', noodle: '麺', shellfish_no: '甲殻類不可'};
+const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
 wDiv.innerHTML = collectorList.map(name => {
   const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
   const safe = name.replace(/'/g,"\\'");
+  const currentTeam = (boardAttendanceData[name] && boardAttendanceData[name].team) || null;
+  const teamBtns = ['A','B','free'].map(t =>
+    '<button type="button" class="' + (currentTeam === t ? 'active' : '') + '" onclick="assignWorkerTeam(\'' + safe + '\',\'' + t + '\')">' + teamLabels[t] + '</button>'
+  ).join('');
   const btns = ['rice','side','noodle','shellfish_no'].map(key =>
     '<button type="button" class="' + (profile.bentoType === key ? 'active' : '') + '" onclick="updateWorkerBentoType(\'' + safe + '\',\'' + key + '\')">' + bentoLabels[key] + '</button>'
   ).join('');
   return '<div class="settingsRow" style="flex-direction:column;align-items:stretch;">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+    '<div class="timeTypeRow">' + teamBtns + '</div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">' +
     '<span class="rName">' + name + '</span>' +
     '<button class="delX" onclick="removeWorkerSetting(\'' + safe + '\')">削除</button>' +
     '</div>' +
@@ -1555,6 +1840,10 @@ const newProfiles = Object.assign({}, workerProfiles, {[name]: profile});
 db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newProfiles});
 }
 function updateWorkerBentoType(name, bentoType) { updateWorkerProfileField(name, 'bentoType', bentoType); }
+function assignWorkerTeam(name, team) {
+const merged = Object.assign({}, boardAttendanceData, {[name]: {offType: 'none', team}});
+db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true});
+}
 function removeWorkerSetting(name) {
 if (!confirm(name + 'さんを作業員一覧から削除しますか?(配車ボードや取引先一覧でも使われなくなります)')) return;
 db.collection('pickupSettings').doc('collectorList').set({names: collectorList.filter(n => n !== name)});
