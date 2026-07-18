@@ -231,6 +231,9 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <button id="clientModeJomuBtn" onclick="switchClientMode('jomu')">常務の取引先一覧</button>
 </div>
 <div class="tabAddBtnRow"><button onclick="openAddClient()">＋ 取引先を追加</button></div>
+<div style="padding:12px 16px 0;">
+  <input type="text" id="clientSearchInput" placeholder="会社名・よみがなで検索" oninput="renderClientList()">
+</div>
 <div class="clientListArea" id="clientListArea"></div>
 <div class="settingsSection">
   <h3 style="margin-top:24px;">その他(共有マスタ)</h3>
@@ -348,6 +351,9 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
     <button class="secondary" onclick="closeModal('entryModal')">キャンセル</button>
     <button class="primary" onclick="saveEntry()">保存</button>
   </div>
+  <div class="btnrow" id="entryReminderRow" style="display:none;">
+    <button class="secondary" onclick="downloadEntryReminder()">📅 カレンダーに追加</button>
+  </div>
   <div class="btnrow" id="deleteEntryRow" style="display:none;">
     <button class="danger" onclick="deleteEntry()">この予定を削除</button>
   </div>
@@ -461,6 +467,8 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div class="detailRow"><div class="label">ETC使用</div><div id="cdEtc"></div></div>
   <div class="detailRow"><div class="label">マニフェスト</div><div id="cdManifest"></div></div>
   <div class="detailRow"><div class="label">備考</div><div id="cdNotes"></div></div>
+  <h3 style="border-top:1px solid #eee;padding-top:14px;">過去の引取履歴</h3>
+  <div id="cdHistory"><div style="color:#999;font-size:13px;">読み込み中...</div></div>
   <div class="btnrow">
     <button class="secondary" onclick="openEditClientFromDetail()">編集</button>
   </div>
@@ -480,6 +488,8 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 
   <label>会社名(引取先) *</label>
   <input type="text" id="clientNameInput">
+  <label>よみがな(ひらがな・検索に使います)</label>
+  <input type="text" id="clientYomiganaInput" placeholder="例:せきねしょうてん">
   <label>住所</label>
   <input type="text" id="clientAddressInput">
   <label>担当者</label>
@@ -819,6 +829,13 @@ const el = document.getElementById('offSel_' + idx);
 if (el) el.style.display = 'none';
 }
 let attendanceTeamFilter = 'all';
+function matchesTeamFilter(name) {
+if (attendanceTeamFilter === 'all') return true;
+const state = boardAttendanceData[name] || {};
+if (attendanceTeamFilter === 'A') return state.team === 'A' || state.team === 'free';
+if (attendanceTeamFilter === 'B') return state.team === 'B' || state.team === 'free';
+return state.team === attendanceTeamFilter;
+}
 function setAttendanceTeamFilter(f) {
 attendanceTeamFilter = f;
 document.querySelectorAll('#attendanceFilterRow button').forEach(btn => {
@@ -836,30 +853,26 @@ if (!collectorList.length) {
   renderBentoMiniBox();
   return;
 }
-let presentCount = 0;
 const amOff = [], pmOff = [], fullOff = [];
 collectorList.forEach(name => {
+  if (!matchesTeamFilter(name)) return;
   const state = boardAttendanceData[name] || {offType: 'none'};
-  if (state.offType === 'full_off') fullOff.push(name); else presentCount++;
+  if (state.offType === 'full_off') fullOff.push(name);
   if (state.offType === 'am_off') amOff.push(name);
   if (state.offType === 'pm_off') pmOff.push(name);
 });
 const filteredEntries = collectorList
   .map((name, idx) => ({name, idx}))
-  .filter(o => {
-    if (attendanceTeamFilter === 'all') return true;
-    const state = boardAttendanceData[o.name] || {};
-    return state.team === attendanceTeamFilter;
-  });
+  .filter(o => matchesTeamFilter(o.name));
 const filteredPresentCount = filteredEntries.filter(o => {
   const state = boardAttendanceData[o.name] || {offType: 'none'};
   return state.offType !== 'full_off';
 }).length;
-const filterLabel = attendanceTeamFilter === 'all' ? '全員' : attendanceTeamFilter === 'A' ? 'A班' : attendanceTeamFilter === 'B' ? 'B班' : 'Free';
+const filterLabel = attendanceTeamFilter === 'all' ? '全員' : attendanceTeamFilter === 'A' ? 'A班(+Free)' : attendanceTeamFilter === 'B' ? 'B班(+Free)' : 'Free';
 workingBox.innerHTML = '<div style="font-size:13px;color:#555;margin-bottom:6px;">' + filterLabel + ' 出勤:' + filteredPresentCount + '名 / 該当:' + filteredEntries.length + '名</div>' +
   (filteredEntries.length ? filteredEntries.map(o => attendanceBlockHtml(o.name, o.idx)).join('') : '<div style="color:#999;font-size:13px;">該当者がいません</div>');
 if (!fullOff.length && !amOff.length && !pmOff.length) {
-  offBox.innerHTML = '<div style="color:#999;font-size:13px;">本日休みの人はいません</div>';
+  offBox.innerHTML = '<div style="color:#999;font-size:13px;">' + (attendanceTeamFilter === 'all' ? '本日休みの人はいません' : filterLabel + 'に休みの人はいません') + '</div>';
 } else {
   let offHtml = '';
   if (fullOff.length) offHtml += '<div class="offSummaryLine">1日休み(' + fullOff.length + '名):' + fullOff.join('・') + '</div>';
@@ -879,6 +892,7 @@ const shellfishNames = [];
 const noodleNames = [];
 const sideNames = [];
 collectorList.forEach(name => {
+  if (!matchesTeamFilter(name)) return;
   const state = boardAttendanceData[name] || {offType: 'none'};
   if (state.offType === 'full_off') return;
   const profile = workerProfiles[name];
@@ -890,7 +904,9 @@ collectorList.forEach(name => {
   else if (profile.bentoType === 'side') { side++; sideNames.push(name); }
   else if (profile.bentoType === 'shellfish_no') { shellfishNo++; shellfishNames.push(name); }
 });
-let html = '<div class="bentoMiniSub">お弁当:' + rice + '個</div>';
+const bentoFilterLabel = attendanceTeamFilter === 'all' ? '' : (attendanceTeamFilter === 'A' ? 'A班(+Free)の' : attendanceTeamFilter === 'B' ? 'B班(+Free)の' : 'Freeの');
+let html = bentoFilterLabel ? '<div class="bentoMiniSub" style="font-weight:bold;color:#1D3557;">' + bentoFilterLabel + '集計</div>' : '';
+html += '<div class="bentoMiniSub">お弁当:' + rice + '個</div>';
 html += '<div class="bentoMiniSub">おかずのみ:' + side + '個</div>';
 if (sideNames.length) html += '<div class="bentoMiniSub" style="color:#c0392b;">(おかずのみの人:' + sideNames.join('・') + ')</div>';
 html += '<div class="bentoMiniSub">麺:' + noodle + '個</div>';
@@ -1184,6 +1200,28 @@ document.getElementById('cdEtc').textContent = etcLabelFor(c);
 document.getElementById('cdManifest').textContent = manifestLabelFull(c);
 document.getElementById('cdNotes').textContent = c.notes || 'なし';
 document.getElementById('companyDetailModal').classList.add('show');
+loadClientHistory(clientId);
+}
+function loadClientHistory(clientId) {
+const box = document.getElementById('cdHistory');
+box.innerHTML = '<div style="color:#999;font-size:13px;">読み込み中...</div>';
+db.collection('haishaBoard').where('companyId', '==', clientId).get().then(snapshot => {
+  const items = [];
+  snapshot.forEach(doc => items.push(doc.data()));
+  items.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAtMs || 0) - (a.createdAtMs || 0));
+  if (!items.length) { box.innerHTML = '<div style="color:#999;font-size:13px;">履歴はまだありません</div>'; return; }
+  box.innerHTML = items.slice(0, 20).map(h => {
+    const timeLabel = h.timeType === 'am' ? '午前' : h.timeType === 'pm' ? '午後' : (h.customTime || '');
+    let line = '<div class="historyItemRow"><div style="font-weight:bold;color:#1D3557;">' + h.date + ' ' + timeLabel + '</div>';
+    if (h.workers && h.workers.length) line += '<div style="font-size:13px;">👷 ' + h.workers.join('・') + '</div>';
+    if (h.truck) line += '<div style="font-size:13px;">🚚 ' + h.truck + '</div>';
+    if (h.belongings) line += '<div style="font-size:13px;">📦 ' + h.belongings + '</div>';
+    line += '<div style="font-size:12px;color:#888;">' + (h.status === 'done' ? '回収済' : '未回収') + '</div></div>';
+    return line;
+  }).join('<hr style="border:none;border-top:1px solid #eee;margin:8px 0;">');
+}).catch(err => {
+  box.innerHTML = '<div style="color:#c0392b;font-size:13px;">読み込みに失敗しました</div>';
+});
 }
 function openEditClientFromDetail() {
 if (!currentDetailClientId) return;
@@ -1278,6 +1316,7 @@ function openAddEntry(listType) {
 document.getElementById('entryModalTitle').textContent = '予定を追加';
 document.getElementById('editEntryId').value = '';
 document.getElementById('deleteEntryRow').style.display = 'none';
+document.getElementById('entryReminderRow').style.display = 'none';
 selectEntryListType(listType || 'normal');
 selectedTimeType = 'am';
 selectTimeType('am');
@@ -1301,6 +1340,7 @@ if (!e) return;
 document.getElementById('entryModalTitle').textContent = '予定を編集';
 document.getElementById('editEntryId').value = e.id;
 document.getElementById('deleteEntryRow').style.display = 'flex';
+document.getElementById('entryReminderRow').style.display = 'flex';
 selectEntryListType(e.listType || 'normal');
 selectedTimeType = e.timeType || 'am';
 selectTimeType(selectedTimeType);
@@ -1457,6 +1497,57 @@ if (!confirm('この予定を削除しますか?')) return;
 db.collection('haishaBoard').doc(editId).delete()
   .then(() => closeModal('entryModal'))
   .catch(err => alert('削除に失敗しました: ' + err.message));
+}
+function pad2(n) { return String(n).padStart(2, '0'); }
+function downloadEntryReminder() {
+const editId = document.getElementById('editEntryId').value;
+const e = boardEntries.find(x => x.id === editId);
+if (!e) { alert('保存してから「カレンダーに追加」を押してください'); return; }
+const parts = e.date.split('-').map(Number);
+let hour = 9, minute = 0;
+if (e.timeType === 'pm') { hour = 13; }
+if (e.timeType === 'custom' && e.customTime) {
+  const tparts = e.customTime.split(':').map(Number);
+  hour = tparts[0]; minute = tparts[1] || 0;
+}
+const eventStart = new Date(parts[0], parts[1] - 1, parts[2], hour, minute, 0);
+const eventEnd = new Date(eventStart.getTime() + 60 * 60 * 1000);
+const dt = (d) => d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + 'T' + pad2(d.getHours()) + pad2(d.getMinutes()) + '00';
+const uid = 'haisha-' + e.id + '@sekine-store';
+const summary = '配車:' + (e.companyName || '');
+const descParts = [];
+if (e.pickupPlace) descParts.push('場所:' + e.pickupPlace);
+if (e.workers && e.workers.length) descParts.push('作業員:' + e.workers.join('・'));
+if (e.truck) descParts.push('車:' + e.truck);
+if (e.belongings) descParts.push('持ち物:' + e.belongings);
+const desc = descParts.join('\\n');
+const ics =
+  'BEGIN:VCALENDAR\r\n' +
+  'VERSION:2.0\r\n' +
+  'PRODID:-//haisha-board//JA\r\n' +
+  'BEGIN:VEVENT\r\n' +
+  'UID:' + uid + '\r\n' +
+  'DTSTART:' + dt(eventStart) + '\r\n' +
+  'DTEND:' + dt(eventEnd) + '\r\n' +
+  'SUMMARY:' + summary + '\r\n' +
+  'DESCRIPTION:' + desc + '\r\n' +
+  'BEGIN:VALARM\r\n' +
+  'ACTION:DISPLAY\r\n' +
+  'DESCRIPTION:配車予定のお知らせ\r\n' +
+  'TRIGGER:-PT30M\r\n' +
+  'END:VALARM\r\n' +
+  'END:VEVENT\r\n' +
+  'END:VCALENDAR\r\n';
+const blob = new Blob([ics], {type: 'text/calendar'});
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = '配車予定_' + (e.companyName || '') + '_' + e.date + '.ics';
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+URL.revokeObjectURL(url);
+alert('カレンダー用のファイルをダウンロードしました。開いてカレンダーアプリに追加してください。');
 }
 
 // ---- 配車ボード全体 LINE/印刷 ----
@@ -1636,8 +1727,14 @@ function renderClientList() {
 const div = document.getElementById('clientListArea');
 if (!div) return;
 const list = clientListMode === 'jomu' ? clientsJomu : clients;
+const searchBox = document.getElementById('clientSearchInput');
+const keyword = searchBox ? searchBox.value.trim().toLowerCase() : '';
+const filtered = keyword
+  ? list.filter(c => (c.name || '').toLowerCase().includes(keyword) || (c.yomigana || '').includes(searchBox.value.trim()))
+  : list;
 if (!list.length) { div.innerHTML = '<div class="empty">取引先がまだ登録されていません</div>'; return; }
-div.innerHTML = list.map(c => {
+if (!filtered.length) { div.innerHTML = '<div class="empty">該当する取引先が見つかりません</div>'; return; }
+div.innerHTML = filtered.map(c => {
   return '<div class="card" onclick="openEditClient(\'' + c.id + '\')">' +
     '<h2 style="margin:0;font-size:17px;color:#1D3557;">' + c.name + '</h2>' +
     (c.address ? '<div style="color:#666;font-size:13px;margin-top:4px;">' + c.address + '</div>' : '') +
@@ -1706,6 +1803,7 @@ document.getElementById('clientModalTitle').textContent = '取引先を追加(' 
 document.getElementById('editClientId').value = '';
 document.getElementById('deleteClientRow').style.display = 'none';
 document.getElementById('clientNameInput').value = '';
+document.getElementById('clientYomiganaInput').value = '';
 document.getElementById('clientAddressInput').value = '';
 document.getElementById('clientContactNameInput').value = '';
 document.getElementById('clientContactPhoneInput').value = '';
@@ -1731,6 +1829,7 @@ document.getElementById('clientModalTitle').textContent = '取引先を編集(' 
 document.getElementById('editClientId').value = c.id;
 document.getElementById('deleteClientRow').style.display = 'flex';
 document.getElementById('clientNameInput').value = c.name || '';
+document.getElementById('clientYomiganaInput').value = c.yomigana || '';
 document.getElementById('clientAddressInput').value = c.address || '';
 document.getElementById('clientContactNameInput').value = c.contactName || '';
 document.getElementById('clientContactPhoneInput').value = c.contactPhone || '';
@@ -1754,6 +1853,7 @@ const name = document.getElementById('clientNameInput').value.trim();
 if (!name) { alert('会社名を入力してください'); return; }
 const data = {
   name,
+  yomigana: document.getElementById('clientYomiganaInput').value.trim(),
   address: document.getElementById('clientAddressInput').value.trim(),
   contactName: document.getElementById('clientContactNameInput').value.trim(),
   contactPhone: document.getElementById('clientContactPhoneInput').value.trim(),
