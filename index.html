@@ -45,10 +45,14 @@ header h1 { margin: 0; font-size: 18px; }
 .dateNav input[type=date] { padding: 8px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
 .todayBtn { background: #1D3557 !important; color: white !important; border: none !important; }
 
-.boardLayout { display: flex; gap: 14px; padding: 0 12px 90px; align-items: flex-start; }
+.boardLayout { display: flex; gap: 14px; padding: 0 12px 40px; align-items: flex-start; }
 .boardSidebar { width: 280px; flex-shrink: 0; }
-.boardMain { flex: 1; min-width: 0; }
+.boardMain { flex: 1; min-width: 0; display: flex; gap: 14px; }
+.boardCol { flex: 1; min-width: 0; }
+.boardColHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.boardColHeader span { font-weight: bold; color: #1D3557; font-size: 15px; }
 @media (max-width: 900px) { .boardLayout { flex-direction: column; } .boardSidebar { width: 100%; } }
+@media (max-width: 620px) { .boardMain { flex-direction: column; } }
 
 .sideBox { background: white; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
 .sideBox h4 { margin: 0 0 8px; font-size: 14px; color: #1D3557; display: flex; justify-content: space-between; align-items: center; }
@@ -62,8 +66,8 @@ header h1 { margin: 0; font-size: 18px; }
 .offSelectorRow button { flex: 1; min-width: 56px; padding: 5px 2px; border: 1px solid #ccc; border-radius: 6px; background: white; font-size: 11px; }
 .offSelectorRow button.active { background: #1D3557; color: white; border-color: #1D3557; }
 .offSummaryLine { font-size: 13px; color: #555; margin-top: 4px; }
-.bentoMiniBig { font-size: 20px; font-weight: bold; color: #1D3557; }
-.bentoMiniSub { font-size: 12px; color: #555; margin-top: 4px; }
+.bentoMiniBig { font-size: 20px; font-weight: bold; color: #1D3557; margin-top: 6px; }
+.bentoMiniSub { font-size: 13px; color: #333; margin-top: 2px; }
 .copyBtnSmall { width: 100%; margin-top: 8px; padding: 6px; border: 1px solid #1D3557; background: white; color: #1D3557; border-radius: 6px; font-size: 12px; }
 .shukkaItem { font-size: 13px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
 .shukkaItem:last-child { border-bottom: none; }
@@ -71,8 +75,7 @@ header h1 { margin: 0; font-size: 18px; }
 .shukkaStatusBtn.pending { background: #ffcdd2; color: #b71c1c; }
 .shukkaStatusBtn.done { background: #c8e6c9; color: #256029; }
 
-.boardList { padding: 10px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.card { background: white; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); position: relative; }
+.card { background: white; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); position: relative; margin-bottom: 12px; }
 .badge { display: inline-block; font-size: 13px; font-weight: bold; padding: 4px 10px; border-radius: 20px; margin-bottom: 8px; margin-right: 6px; }
 .badge.am { background: #ffe8cc; color: #a85c00; }
 .badge.pm { background: #d6e4ff; color: #1d3f8f; }
@@ -87,9 +90,7 @@ header h1 { margin: 0; font-size: 18px; }
 .card .companyName.linked { text-decoration: underline; text-decoration-style: dotted; }
 .rowLine { font-size: 15px; color: #333; margin-top: 4px; display: flex; gap: 6px; }
 .rowLine .ico { flex-shrink: 0; }
-.empty { text-align: center; color: #999; padding: 60px 20px; font-size: 15px; }
-
-.fab { position: fixed; right: 20px; bottom: 24px; width: 58px; height: 58px; border-radius: 50%; background: #1D3557; color: white; font-size: 30px; border: none; box-shadow: 0 3px 8px rgba(0,0,0,0.3); z-index: 5; }
+.empty { text-align: center; color: #999; padding: 40px 20px; font-size: 14px; }
 
 .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: flex-end; }
 .overlay.show { display: flex; }
@@ -101,8 +102,8 @@ input[type=text], input[type=tel], input[type=time], input[type=date], input[typ
   width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px;
 }
 textarea { resize: vertical; min-height: 50px; }
-.timeTypeRow { display: flex; gap: 8px; margin-top: 6px; }
-.timeTypeRow button { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; background: white; font-size: 14px; color: #333; }
+.timeTypeRow { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.timeTypeRow button { flex: 1; min-width: 70px; padding: 12px 4px; border: 1px solid #ccc; border-radius: 8px; background: white; font-size: 14px; color: #333; }
 .timeTypeRow button.active { background: #1D3557; color: white; border-color: #1D3557; }
 .searchBoxWrap { position: relative; }
 .searchSuggest { display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #eee; border-radius: 0 0 8px 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 15; max-height: 220px; overflow-y: auto; }
@@ -124,17 +125,18 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 .detailRow { margin-bottom: 10px; font-size: 15px; }
 .detailRow .label { color: #888; font-size: 12px; }
 
-/* 設定・取引先一覧 共通 */
 .settingsSection { padding: 16px; }
 .settingsSection h3 { color: #1D3557; margin-bottom: 8px; }
 .settingsSection h4 { margin: 0 0 6px; }
-.infoBox { background: #eef4ff; border-radius: 10px; padding: 12px 14px; font-size: 14px; color: #333; margin-bottom: 16px; }
 .settingsRow { display: flex; align-items: center; gap: 8px; background: white; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); flex-wrap: wrap; }
 .settingsRow .rName { font-weight: bold; flex: 1; min-width: 80px; }
-.settingsRow select { width: auto; padding: 6px 8px; font-size: 13px; }
 .settingsRow .delX { color: #c0392b; border: 1px solid #c0392b; border-radius: 6px; padding: 4px 10px; font-size: 12px; background: white; }
-.settingsRow label.inlineChk { display: flex; align-items: center; gap: 4px; font-size: 13px; margin: 0; white-space: nowrap; }
 .clientListArea { padding: 12px 16px 0; }
+.clientModeRow { display: flex; gap: 8px; padding: 12px 16px 0; }
+.clientModeRow button { flex: 1; padding: 10px; border: 1px solid #1D3557; border-radius: 8px; background: white; color: #1D3557; font-weight: bold; font-size: 14px; }
+.clientModeRow button.active { background: #1D3557; color: white; }
+.tabAddBtnRow { padding: 0 16px; margin-top: 10px; }
+.tabAddBtnRow button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: #1D3557; color: white; font-size: 15px; }
 </style>
 </head>
 <body>
@@ -190,14 +192,25 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
     </div>
   </div>
   <div class="boardMain">
-    <div class="boardList" id="boardList"></div>
+    <div class="boardCol">
+      <div class="boardColHeader"><span>📋 常務</span><button class="miniAddBtn" onclick="openAddEntry('jomu')">＋追加</button></div>
+      <div id="boardListJomu"></div>
+    </div>
+    <div class="boardCol">
+      <div class="boardColHeader"><span>📋 通常</span><button class="miniAddBtn" onclick="openAddEntry('normal')">＋追加</button></div>
+      <div id="boardListNormal"></div>
+    </div>
   </div>
 </div>
-<button class="fab" onclick="openAddEntry()">＋</button>
 </div>
 
 <!-- 取引先一覧 -->
 <div class="section" id="section-clients">
+<div class="clientModeRow">
+  <button id="clientModeNormalBtn" class="active" onclick="switchClientMode('normal')">通常の取引先一覧</button>
+  <button id="clientModeJomuBtn" onclick="switchClientMode('jomu')">常務の取引先一覧</button>
+</div>
+<div class="tabAddBtnRow"><button onclick="openAddClient()">＋ 取引先を追加</button></div>
 <div class="clientListArea" id="clientListArea"></div>
 <div class="settingsSection">
   <h3 style="margin-top:24px;">その他(共有マスタ)</h3>
@@ -216,8 +229,15 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <h4 style="margin-top:20px;">マニフェスト内容一覧</h4>
   <div id="clientManifestChips"></div>
   <div class="addRow"><input type="text" id="newManifestTypeOptionInput" placeholder="例:産業廃棄物管理票"><button onclick="addManifestTypeOption()">追加</button></div>
+
+  <h4 style="margin-top:20px;">出荷先一覧</h4>
+  <div id="clientShukkaDestChips"></div>
+  <div class="addRow"><input type="text" id="newShukkaDestInput" placeholder="例:〇〇リサイクルセンター"><button onclick="addShukkaDestination()">追加</button></div>
+
+  <h4 style="margin-top:20px;">出荷品一覧</h4>
+  <div id="clientShukkaItemChips"></div>
+  <div class="addRow"><input type="text" id="newShukkaItemInput" placeholder="例:再生資源A"><button onclick="addShukkaItemOption()">追加</button></div>
 </div>
-<button class="fab" onclick="openAddClient()">＋</button>
 </div>
 
 <!-- 設定 -->
@@ -238,6 +258,12 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div class="closeBtn" onclick="closeModal('entryModal')">閉じる ✕</div>
   <h2 id="entryModalTitle">予定を追加</h2>
   <input type="hidden" id="editEntryId">
+
+  <label>担当</label>
+  <div class="timeTypeRow">
+    <button type="button" id="entryListTypeNormal" onclick="selectEntryListType('normal')">通常</button>
+    <button type="button" id="entryListTypeJomu" onclick="selectEntryListType('jomu')">常務</button>
+  </div>
 
   <label>時間帯</label>
   <div class="timeTypeRow">
@@ -311,14 +337,17 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <h2 id="shukkaModalTitle">出荷を追加</h2>
   <input type="hidden" id="editShukkaId">
 
-  <label>会社名</label>
+  <label>出荷先</label>
   <div class="searchBoxWrap">
-    <input type="text" id="shukkaCompanyInput" placeholder="会社名を入力(取引先一覧から候補が出ます)" autocomplete="off">
+    <input type="text" id="shukkaCompanyInput" placeholder="出荷先を入力(候補が出ます)" autocomplete="off">
     <div class="searchSuggest" id="shukkaCompanySuggest"></div>
   </div>
 
   <label>出荷品</label>
-  <input type="text" id="shukkaItemInput" placeholder="例:再生資源A 10袋">
+  <div class="searchBoxWrap">
+    <input type="text" id="shukkaItemInput" placeholder="出荷品を入力(候補が出ます)" autocomplete="off">
+    <div class="searchSuggest" id="shukkaItemSuggest"></div>
+  </div>
 
   <label>作業員(複数可)</label>
   <div>
@@ -352,14 +381,15 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div class="detailRow"><div class="label">担当者電話</div><div id="cdContactPhone"></div></div>
   <div class="detailRow"><div class="label">回収物</div><div id="cdShuhin"></div></div>
   <div class="detailRow"><div class="label">持ち物</div><div id="cdItems"></div></div>
+  <div class="detailRow"><div class="label">ETC使用</div><div id="cdEtc"></div></div>
   <div class="detailRow"><div class="label">マニフェスト</div><div id="cdManifest"></div></div>
   <div class="detailRow"><div class="label">備考</div><div id="cdNotes"></div></div>
   <div class="btnrow">
     <button class="secondary" onclick="openEditClientFromDetail()">編集</button>
   </div>
   <div class="btnrow">
-    <button class="ghost secondary" onclick="shareClientDetailToLine()">LINEへ送る</button>
-    <button class="ghost secondary" onclick="printClientDetail()">印刷</button>
+    <button class="secondary" onclick="shareClientDetailToLine()">LINEへ送る</button>
+    <button class="secondary" onclick="printClientDetail()">印刷</button>
   </div>
 </div>
 </div>
@@ -392,9 +422,23 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 
   <label>持ち物</label>
   <div class="addRow"><span style="flex:1;">フレコン(枚)</span><input type="number" id="clientQtyFlecon" style="width:90px;" min="0"></div>
-  <div class="addRow"><span style="flex:1;">ドラム穴あり(本)</span><input type="number" id="clientQtyAnaAki" style="width:90px;" min="0"></div>
-  <div class="addRow"><span style="flex:1;">ドラム穴なし(本)</span><input type="number" id="clientQtyAnaNashi" style="width:90px;" min="0"></div>
+  <div class="addRow"><span style="flex:1;">穴あきドラム(本)</span><input type="number" id="clientQtyAnaAki" style="width:90px;" min="0"></div>
+  <div class="addRow"><span style="flex:1;">穴なしドラム(本)</span><input type="number" id="clientQtyAnaNashi" style="width:90px;" min="0"></div>
   <div class="addRow"><span style="flex:1;">箱(個)</span><input type="number" id="clientQtyBox" style="width:90px;" min="0"></div>
+
+  <label>ETC使用</label>
+  <div class="timeTypeRow">
+    <button type="button" id="clientEtcNashi" onclick="selectClientEtc('なし')">なし</button>
+    <button type="button" id="clientEtcAri" onclick="selectClientEtc('あり')">あり</button>
+  </div>
+  <div id="clientEtcCountWrap" style="display:none;">
+    <label>ETC必要枚数</label>
+    <select id="clientEtcCountInput">
+      <option value="1枚">1枚</option><option value="2枚">2枚</option><option value="3枚">3枚</option>
+      <option value="4枚">4枚</option><option value="5枚">5枚</option><option value="6枚">6枚</option>
+      <option value="7枚">7枚</option><option value="8枚">8枚</option><option value="9枚">9枚</option><option value="10枚">10枚</option>
+    </select>
+  </div>
 
   <label>マニフェスト</label>
   <div class="timeTypeRow">
@@ -449,10 +493,14 @@ if (deferredInstallPrompt) {
 window.addEventListener('appinstalled', () => { installBtn.style.display = 'none'; });
 
 let clients = [];
+let clientsJomu = [];
+let clientListMode = 'normal';
 let truckList = [];
 let collectorList = [];
 let shuhinOptions = [];
 let manifestTypeList = [];
+let shukkaDestinations = [];
+let shukkaItemsList = [];
 let workerProfiles = {};
 let boardEntries = [];
 let shukkaEntries = [];
@@ -474,10 +522,16 @@ function itemsLabelFor(items) {
 if (!items) return 'なし';
 const parts = [];
 if (items.flecon) parts.push('フレコン' + items.flecon + '枚');
-if (items.anaAkiDrum) parts.push('穴ありドラム' + items.anaAkiDrum + '本');
+if (items.anaAkiDrum) parts.push('穴あきドラム' + items.anaAkiDrum + '本');
 if (items.anaNashiDrum) parts.push('穴なしドラム' + items.anaNashiDrum + '本');
 if (items.box) parts.push('箱' + items.box + '個');
 return parts.length ? parts.join('・') : 'なし';
+}
+function etcLabelFor(c) {
+return c && c.etcUse === 'あり' ? ('あり(' + (c.etcCount || '') + ')') : 'なし';
+}
+function findClientById(id) {
+return clients.find(x => x.id === id) || clientsJomu.find(x => x.id === id);
 }
 
 function switchMainTab(tab) {
@@ -497,6 +551,11 @@ clients = [];
 snapshot.forEach(doc => clients.push({id: doc.id, ...doc.data()}));
 renderClientList();
 });
+db.collection('haishaClientsJomu').orderBy('name').onSnapshot(snapshot => {
+clientsJomu = [];
+snapshot.forEach(doc => clientsJomu.push({id: doc.id, ...doc.data()}));
+renderClientList();
+});
 function subscribeList(docName, setter) {
 db.collection('pickupSettings').doc(docName).onSnapshot(doc => {
   setter((doc.exists && doc.data().names) ? doc.data().names : []);
@@ -509,6 +568,8 @@ subscribeList('truckList', v => truckList = v);
 subscribeList('collectorList', v => collectorList = v);
 subscribeList('shuhinOptions', v => shuhinOptions = v);
 subscribeList('manifestTypes', v => manifestTypeList = v);
+subscribeList('shukkaDestinations', v => shukkaDestinations = v);
+subscribeList('shukkaItems', v => shukkaItemsList = v);
 db.collection('pickupSettings').doc('workerBentoProfiles').onSnapshot(doc => {
 workerProfiles = (doc.exists && doc.data().profiles) ? doc.data().profiles : {};
 renderAttendanceBoxes();
@@ -570,31 +631,31 @@ if (e.timeType === 'pm') return '<span class="badge pm">午後</span>';
 if (e.timeType === 'custom') return '<span class="badge custom">' + (e.customTime || '時間指定') + '</span>';
 return '';
 }
-
-function renderBoard() {
-const list = document.getElementById('boardList');
-if (boardEntries.length === 0) {
-  list.innerHTML = '<div class="empty" style="grid-column:1/-1;">この日の予定はまだありません。<br>右下の＋ボタンから追加してください。</div>';
-  return;
+function cardHtml(e) {
+const linked = !!e.companyId;
+const status = e.status || 'pending';
+let html = '<div class="card" onclick="openEditEntry(\'' + e.id + '\')">';
+html += '<div class="topRow">';
+if (e.phone) html += '<a class="phoneBtn" href="tel:' + e.phone + '" onclick="event.stopPropagation();">📞 ' + e.phone + '</a>';
+html += '<button class="statusBtn ' + status + '" onclick="event.stopPropagation();toggleStatus(\'' + e.id + '\')">' + (status === 'done' ? '回収済' : '未回収') + '</button>';
+html += timeBadgeHtml(e);
+if (e.etcUse === 'あり') html += '<span class="badge etc">ETC ' + (e.etcCount || '') + '</span>';
+html += '</div>';
+html += '<span class="companyName' + (linked ? ' linked' : '') + '" onclick="event.stopPropagation();' + (linked ? "showCompanyDetail('" + e.companyId + "')" : "") + '">' + (e.companyName || '(会社名未入力)') + '</span>';
+if (e.pickupPlace) html += '<div class="rowLine"><span class="ico">📍</span><span>' + e.pickupPlace + '</span></div>';
+if (e.workers && e.workers.length) html += '<div class="rowLine"><span class="ico">👷</span><span>' + arrLabel(e.workers) + '</span></div>';
+if (e.truck) html += '<div class="rowLine"><span class="ico">🚚</span><span>' + e.truck + '</span></div>';
+if (e.belongings) html += '<div class="rowLine"><span class="ico">📦</span><span>' + e.belongings + '</span></div>';
+html += '</div>';
+return html;
 }
-list.innerHTML = boardEntries.map(e => {
-  const linked = !!e.companyId;
-  const status = e.status || 'pending';
-  let html = '<div class="card" onclick="openEditEntry(\'' + e.id + '\')">';
-  html += '<div class="topRow">';
-  if (e.phone) html += '<a class="phoneBtn" href="tel:' + e.phone + '" onclick="event.stopPropagation();">📞 ' + e.phone + '</a>';
-  html += '<button class="statusBtn ' + status + '" onclick="event.stopPropagation();toggleStatus(\'' + e.id + '\')">' + (status === 'done' ? '回収済' : '未回収') + '</button>';
-  html += timeBadgeHtml(e);
-  if (e.etcUse === 'あり') html += '<span class="badge etc">ETC ' + (e.etcCount || '') + '</span>';
-  html += '</div>';
-  html += '<span class="companyName' + (linked ? ' linked' : '') + '" onclick="event.stopPropagation();' + (linked ? "showCompanyDetail('" + e.companyId + "')" : "") + '">' + (e.companyName || '(会社名未入力)') + '</span>';
-  if (e.pickupPlace) html += '<div class="rowLine"><span class="ico">📍</span><span>' + e.pickupPlace + '</span></div>';
-  if (e.workers && e.workers.length) html += '<div class="rowLine"><span class="ico">👷</span><span>' + arrLabel(e.workers) + '</span></div>';
-  if (e.truck) html += '<div class="rowLine"><span class="ico">🚚</span><span>' + e.truck + '</span></div>';
-  if (e.belongings) html += '<div class="rowLine"><span class="ico">📦</span><span>' + e.belongings + '</span></div>';
-  html += '</div>';
-  return html;
-}).join('');
+function renderBoard() {
+const jomuList = boardEntries.filter(e => e.listType === 'jomu');
+const normalList = boardEntries.filter(e => e.listType !== 'jomu');
+const jomuBox = document.getElementById('boardListJomu');
+const normalBox = document.getElementById('boardListNormal');
+jomuBox.innerHTML = jomuList.length ? jomuList.map(cardHtml).join('') : '<div class="empty">常務の予定はまだありません</div>';
+normalBox.innerHTML = normalList.length ? normalList.map(cardHtml).join('') : '<div class="empty">予定はまだありません</div>';
 }
 function toggleStatus(entryId) {
 const e = boardEntries.find(x => x.id === entryId);
@@ -679,16 +740,20 @@ collectorList.forEach(name => {
   else if (profile.bentoType === 'side') side++;
   else if (profile.bentoType === 'shellfish_no') { shellfishNo++; shellfishNames.push(name); }
 });
-let html = '<div class="bentoMiniBig">合計 ' + total + '個</div>';
-html += '<div class="bentoMiniSub">お弁当' + rice + '・おかずのみ' + side + '・麺' + noodle + '・甲殻類不可' + shellfishNo + (unset ? '・未設定' + unset : '') + '</div>';
-if (shellfishNames.length) html += '<div class="bentoMiniSub" style="color:#c0392b;">甲殻類不可の人:' + shellfishNames.join('・') + '</div>';
+let html = '<div class="bentoMiniSub">お弁当:' + rice + '個</div>';
+html += '<div class="bentoMiniSub">おかずのみ:' + side + '個</div>';
+html += '<div class="bentoMiniSub">麺:' + noodle + '個</div>';
+html += '<div class="bentoMiniSub">甲殻類不可:' + shellfishNo + '個</div>';
+if (unset) html += '<div class="bentoMiniSub">未設定:' + unset + '個</div>';
+html += '<div class="bentoMiniBig">合計:' + total + '個</div>';
+if (shellfishNames.length) html += '<div class="bentoMiniSub" style="color:#c0392b;">(甲殻類不可の人:' + shellfishNames.join('・') + ')</div>';
 html += '<button class="copyBtnSmall" onclick="copyBentoMiniSummary()">この内容をコピー</button>';
 box.innerHTML = html;
 lastBentoMiniSummary = {total, rice, noodle, side, shellfishNo, shellfishNames};
 }
 function copyBentoMiniSummary() {
 const {total, rice, noodle, side, shellfishNo, shellfishNames} = lastBentoMiniSummary;
-let text = formatBigDate(currentDate) + ' のお弁当\n合計:' + total + '個\nお弁当:' + rice + '個\nおかずのみ:' + side + '個\n甲殻類不可:' + shellfishNo + '個\n麺:' + noodle + '個';
+let text = formatBigDate(currentDate) + ' のお弁当\nお弁当:' + rice + '個\nおかずのみ:' + side + '個\n麺:' + noodle + '個\n甲殻類不可:' + shellfishNo + '個\n合計:' + total + '個';
 if (shellfishNames.length) text += '\n(甲殻類不可の人:' + shellfishNames.join('・') + ')';
 if (navigator.clipboard && navigator.clipboard.writeText) {
   navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(() => prompt('コピーしてください', text));
@@ -704,10 +769,9 @@ if (!box) return;
 if (!shukkaEntries.length) { box.innerHTML = '<div style="color:#999;font-size:13px;">まだ出荷予定がありません</div>'; return; }
 box.innerHTML = shukkaEntries.map(s => {
   const status = s.status || 'pending';
-  const linked = !!s.companyId;
   let html = '<div class="shukkaItem" onclick="openEditShukka(\'' + s.id + '\')">';
   html += '<button class="shukkaStatusBtn ' + status + '" onclick="event.stopPropagation();toggleShukkaStatus(\'' + s.id + '\')">' + (status === 'done' ? '出荷済' : '未出荷') + '</button>';
-  html += '<span class="companyName' + (linked ? ' linked' : '') + '" style="font-size:14px;" onclick="event.stopPropagation();' + (linked ? "showCompanyDetail('" + s.companyId + "')" : '') + '">' + (s.companyName || '(会社名未入力)') + '</span>';
+  html += '<span style="font-weight:bold;font-size:14px;">' + (s.companyName || '(未入力)') + '</span>';
   if (s.shippedItem) html += '<div class="rowLine" style="font-size:13px;">📦 ' + s.shippedItem + '</div>';
   if (s.workers && s.workers.length) html += '<div class="rowLine" style="font-size:13px;">👷 ' + arrLabel(s.workers) + '</div>';
   if (s.truck) html += '<div class="rowLine" style="font-size:13px;">🚚 ' + s.truck + '</div>';
@@ -721,13 +785,11 @@ if (!s) return;
 const newStatus = (s.status === 'done') ? 'pending' : 'done';
 db.collection('shukkaBoard').doc(id).update({status: newStatus});
 }
-let selectedShukkaCompanyId = null;
 function openAddShukka() {
 document.getElementById('shukkaModalTitle').textContent = '出荷を追加';
 document.getElementById('editShukkaId').value = '';
 document.getElementById('deleteShukkaRow').style.display = 'none';
 document.getElementById('shukkaCompanyInput').value = '';
-selectedShukkaCompanyId = null;
 document.getElementById('shukkaItemInput').value = '';
 document.getElementById('shukkaTruckInput').value = '';
 fillShukkaWorkersChecks([]);
@@ -741,7 +803,6 @@ document.getElementById('shukkaModalTitle').textContent = '出荷を編集';
 document.getElementById('editShukkaId').value = s.id;
 document.getElementById('deleteShukkaRow').style.display = 'flex';
 document.getElementById('shukkaCompanyInput').value = s.companyName || '';
-selectedShukkaCompanyId = s.companyId || null;
 document.getElementById('shukkaItemInput').value = s.shippedItem || '';
 document.getElementById('shukkaTruckInput').value = s.truck || '';
 fillShukkaWorkersChecks(s.workers || []);
@@ -758,22 +819,34 @@ const panel = document.getElementById('shukkaWorkersChecks');
 panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'flex' : 'none';
 }
 const shukkaCompanyInput = document.getElementById('shukkaCompanyInput');
-shukkaCompanyInput.addEventListener('input', () => { selectedShukkaCompanyId = null; renderShukkaCompanySuggest(); });
+shukkaCompanyInput.addEventListener('input', renderShukkaCompanySuggest);
+shukkaCompanyInput.addEventListener('focus', renderShukkaCompanySuggest);
 function renderShukkaCompanySuggest() {
 const keyword = shukkaCompanyInput.value.trim();
 const box = document.getElementById('shukkaCompanySuggest');
-if (!keyword) { box.classList.remove('show'); return; }
-const matches = clients.filter(c => companyMatchesKeyword(c, keyword)).slice(0, 8);
+const matches = keyword ? shukkaDestinations.filter(t => t.includes(keyword)) : shukkaDestinations;
 if (!matches.length) { box.classList.remove('show'); return; }
-box.innerHTML = matches.map(c => '<div class="sItem" onclick="selectShukkaCompanySuggest(\'' + c.id + '\')">' + c.name + '</div>').join('');
+box.innerHTML = matches.slice(0,8).map(name => '<div class="sItem" onclick="selectShukkaCompanySuggest(\'' + name.replace(/'/g,"\\'") + '\')">' + name + '</div>').join('');
 box.classList.add('show');
 }
-function selectShukkaCompanySuggest(clientId) {
-const c = clients.find(x => x.id === clientId);
-if (!c) return;
-shukkaCompanyInput.value = c.name;
-selectedShukkaCompanyId = clientId;
+function selectShukkaCompanySuggest(name) {
+shukkaCompanyInput.value = name;
 document.getElementById('shukkaCompanySuggest').classList.remove('show');
+}
+const shukkaItemInput = document.getElementById('shukkaItemInput');
+shukkaItemInput.addEventListener('input', renderShukkaItemSuggest);
+shukkaItemInput.addEventListener('focus', renderShukkaItemSuggest);
+function renderShukkaItemSuggest() {
+const keyword = shukkaItemInput.value.trim();
+const box = document.getElementById('shukkaItemSuggest');
+const matches = keyword ? shukkaItemsList.filter(t => t.includes(keyword)) : shukkaItemsList;
+if (!matches.length) { box.classList.remove('show'); return; }
+box.innerHTML = matches.slice(0,8).map(name => '<div class="sItem" onclick="selectShukkaItemSuggest(\'' + name.replace(/'/g,"\\'") + '\')">' + name + '</div>').join('');
+box.classList.add('show');
+}
+function selectShukkaItemSuggest(name) {
+shukkaItemInput.value = name;
+document.getElementById('shukkaItemSuggest').classList.remove('show');
 }
 const shukkaTruckInput = document.getElementById('shukkaTruckInput');
 shukkaTruckInput.addEventListener('input', renderShukkaTruckSuggest);
@@ -792,17 +865,17 @@ document.getElementById('shukkaTruckSuggest').classList.remove('show');
 }
 document.addEventListener('click', (e) => {
 if (!e.target.closest('#shukkaCompanyInput') && !e.target.closest('#shukkaCompanySuggest')) document.getElementById('shukkaCompanySuggest').classList.remove('show');
+if (!e.target.closest('#shukkaItemInput') && !e.target.closest('#shukkaItemSuggest')) document.getElementById('shukkaItemSuggest').classList.remove('show');
 if (!e.target.closest('#shukkaTruckInput') && !e.target.closest('#shukkaTruckSuggest')) document.getElementById('shukkaTruckSuggest').classList.remove('show');
 });
 function saveShukka() {
 const companyName = shukkaCompanyInput.value.trim();
-if (!companyName) { alert('会社名を入力してください'); return; }
+if (!companyName) { alert('出荷先を入力してください'); return; }
 const workers = Array.from(document.querySelectorAll('.shukkaWorkerCk:checked')).map(el => el.value);
 const data = {
   date: currentDate,
   companyName,
-  companyId: selectedShukkaCompanyId,
-  shippedItem: document.getElementById('shukkaItemInput').value.trim(),
+  shippedItem: shukkaItemInput.value.trim(),
   workers,
   truck: shukkaTruckInput.value.trim()
 };
@@ -831,7 +904,7 @@ db.collection('shukkaBoard').doc(editId).delete()
 
 // ---- 取引先詳細 ----
 function showCompanyDetail(clientId) {
-const c = clients.find(x => x.id === clientId);
+const c = findClientById(clientId);
 if (!c) { alert('取引先の情報が見つかりませんでした'); return; }
 currentDetailClientId = clientId;
 document.getElementById('cdName').textContent = c.name;
@@ -840,6 +913,7 @@ document.getElementById('cdContact').textContent = c.contactName || 'なし';
 document.getElementById('cdContactPhone').textContent = c.contactPhone || 'なし';
 document.getElementById('cdShuhin').textContent = arrLabel(c.shuhinSelected) || 'なし';
 document.getElementById('cdItems').textContent = itemsLabelFor(c.items);
+document.getElementById('cdEtc').textContent = etcLabelFor(c);
 document.getElementById('cdManifest').textContent = c.manifestHas === 'あり' ? ('あり' + (c.manifestDigital ? '(電子マニフェスト対応)' : '')) : 'なし';
 document.getElementById('cdNotes').textContent = c.notes || 'なし';
 document.getElementById('companyDetailModal').classList.add('show');
@@ -847,6 +921,8 @@ document.getElementById('companyDetailModal').classList.add('show');
 function openEditClientFromDetail() {
 if (!currentDetailClientId) return;
 closeModal('companyDetailModal');
+const isJomu = !!clientsJomu.find(x => x.id === currentDetailClientId);
+switchClientMode(isJomu ? 'jomu' : 'normal');
 switchMainTab('clients');
 openEditClient(currentDetailClientId);
 }
@@ -857,11 +933,12 @@ return '【取引先情報】\n会社名:' + (c.name || '') +
   '\n担当者電話:' + (c.contactPhone || 'なし') +
   '\n回収物:' + (arrLabel(c.shuhinSelected) || 'なし') +
   '\n持ち物:' + itemsLabelFor(c.items) +
+  '\nETC使用:' + etcLabelFor(c) +
   '\nマニフェスト:' + (c.manifestHas === 'あり' ? ('あり' + (c.manifestDigital ? '(電子対応)' : '')) : 'なし') +
   '\n備考:' + (c.notes || 'なし');
 }
 function shareClientDetailToLine() {
-const c = clients.find(x => x.id === currentDetailClientId);
+const c = findClientById(currentDetailClientId);
 if (!c) return;
 const text = buildClientShareText(c);
 const lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(text);
@@ -878,7 +955,7 @@ w.document.write(
 w.document.close();
 }
 function printClientDetail() {
-const c = clients.find(x => x.id === currentDetailClientId);
+const c = findClientById(currentDetailClientId);
 if (!c) return;
 const w = window.open('', '_blank');
 w.document.write(
@@ -892,6 +969,7 @@ w.document.write(
   '<tr><td class="label">担当者電話</td><td>' + (c.contactPhone || '') + '</td></tr>' +
   '<tr><td class="label">回収物</td><td>' + arrLabel(c.shuhinSelected) + '</td></tr>' +
   '<tr><td class="label">持ち物</td><td>' + itemsLabelFor(c.items) + '</td></tr>' +
+  '<tr><td class="label">ETC使用</td><td>' + etcLabelFor(c) + '</td></tr>' +
   '<tr><td class="label">マニフェスト</td><td>' + (c.manifestHas === 'あり' ? ('あり' + (c.manifestDigital ? '(電子対応)' : '')) : 'なし') + '</td></tr>' +
   '<tr><td class="label">備考</td><td>' + (c.notes || '') + '</td></tr>' +
   '</table><button onclick="window.close()" style="width:100%;padding:14px;border:none;border-radius:8px;background:#eee;color:#333;font-size:15px;margin-top:16px;">閉じる</button>' +
@@ -906,7 +984,15 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 let selectedTimeType = 'am';
 let selectedCompanyId = null;
 let selectedEtc = 'なし';
+let selectedEntryListType = 'normal';
 
+function selectEntryListType(t) {
+selectedEntryListType = t;
+document.getElementById('entryListTypeNormal').classList.toggle('active', t === 'normal');
+document.getElementById('entryListTypeJomu').classList.toggle('active', t === 'jomu');
+selectedCompanyId = null;
+companyInput.value = '';
+}
 function selectTimeType(t) {
 selectedTimeType = t;
 ['am','pm','custom'].forEach(k => {
@@ -921,10 +1007,11 @@ document.getElementById('etcBtnAri').classList.toggle('active', v === 'あり');
 document.getElementById('etcCountWrap').style.display = (v === 'あり') ? 'block' : 'none';
 }
 
-function openAddEntry() {
+function openAddEntry(listType) {
 document.getElementById('entryModalTitle').textContent = '予定を追加';
 document.getElementById('editEntryId').value = '';
 document.getElementById('deleteEntryRow').style.display = 'none';
+selectEntryListType(listType || 'normal');
 selectedTimeType = 'am';
 selectTimeType('am');
 document.getElementById('customTimeInput').value = '';
@@ -947,6 +1034,7 @@ if (!e) return;
 document.getElementById('entryModalTitle').textContent = '予定を編集';
 document.getElementById('editEntryId').value = e.id;
 document.getElementById('deleteEntryRow').style.display = 'flex';
+selectEntryListType(e.listType || 'normal');
 selectedTimeType = e.timeType || 'am';
 selectTimeType(selectedTimeType);
 document.getElementById('customTimeInput').value = e.customTime || '';
@@ -998,7 +1086,7 @@ if (!workerProfiles[name]) {
 }
 }
 
-// 会社名 入力候補(配車)
+// 会社名 入力候補(配車) - 担当(通常/常務)によって検索先を切り替え
 const companyInput = document.getElementById('companyInput');
 companyInput.addEventListener('input', () => { selectedCompanyId = null; renderCompanySuggest(); });
 document.addEventListener('click', (e) => {
@@ -1013,13 +1101,15 @@ function renderCompanySuggest() {
 const keyword = companyInput.value.trim();
 const box = document.getElementById('companySuggest');
 if (!keyword) { box.classList.remove('show'); return; }
-const matches = clients.filter(c => companyMatchesKeyword(c, keyword)).slice(0, 8);
+const source = selectedEntryListType === 'jomu' ? clientsJomu : clients;
+const matches = source.filter(c => companyMatchesKeyword(c, keyword)).slice(0, 8);
 if (!matches.length) { box.classList.remove('show'); return; }
 box.innerHTML = matches.map(c => '<div class="sItem" onclick="selectCompanySuggest(\'' + c.id + '\')">' + c.name + '</div>').join('');
 box.classList.add('show');
 }
 function selectCompanySuggest(clientId) {
-const c = clients.find(x => x.id === clientId);
+const source = selectedEntryListType === 'jomu' ? clientsJomu : clients;
+const c = source.find(x => x.id === clientId);
 if (!c) return;
 companyInput.value = c.name;
 selectedCompanyId = clientId;
@@ -1028,6 +1118,10 @@ const field = document.getElementById('pickupPlaceInput');
 if (!field.value.trim() && c.address) field.value = c.address;
 const phoneField = document.getElementById('phoneInput');
 if (!phoneField.value.trim() && c.contactPhone) phoneField.value = c.contactPhone;
+if (c.etcUse === 'あり') {
+  selectEtc('あり');
+  document.getElementById('etcCountInput').value = c.etcCount || '1枚';
+}
 }
 
 // 車 入力候補
@@ -1057,6 +1151,7 @@ if (selectedTimeType === 'custom' && !document.getElementById('customTimeInput')
 const workers = Array.from(document.querySelectorAll('.workerCk:checked')).map(el => el.value);
 const data = {
   date: currentDate,
+  listType: selectedEntryListType,
   timeType: selectedTimeType,
   customTime: selectedTimeType === 'custom' ? document.getElementById('customTimeInput').value : '',
   companyName,
@@ -1096,14 +1191,19 @@ db.collection('haishaBoard').doc(editId).delete()
 function buildBoardShareText() {
 if (!boardEntries.length) return null;
 let text = formatBigDate(currentDate) + ' の配車予定\n\n';
-boardEntries.forEach(e => {
-  const timeLabel = e.timeType === 'am' ? '午前' : e.timeType === 'pm' ? '午後' : (e.customTime || '時間指定');
-  text += '【' + timeLabel + '】' + (e.companyName || '') + '\n';
-  if (e.pickupPlace) text += '場所:' + e.pickupPlace + '\n';
-  if (e.workers && e.workers.length) text += '作業員:' + e.workers.join('・') + '\n';
-  if (e.truck) text += '車:' + e.truck + '\n';
-  if (e.belongings) text += '持ち物:' + e.belongings + '\n';
-  text += '状態:' + (e.status === 'done' ? '回収済' : '未回収') + '\n\n';
+['jomu','normal'].forEach(lt => {
+  const list = boardEntries.filter(e => (e.listType || 'normal') === lt);
+  if (!list.length) return;
+  text += '■' + (lt === 'jomu' ? '常務' : '通常') + '\n';
+  list.forEach(e => {
+    const timeLabel = e.timeType === 'am' ? '午前' : e.timeType === 'pm' ? '午後' : (e.customTime || '時間指定');
+    text += '【' + timeLabel + '】' + (e.companyName || '') + '\n';
+    if (e.pickupPlace) text += '場所:' + e.pickupPlace + '\n';
+    if (e.workers && e.workers.length) text += '作業員:' + e.workers.join('・') + '\n';
+    if (e.truck) text += '車:' + e.truck + '\n';
+    if (e.belongings) text += '持ち物:' + e.belongings + '\n';
+    text += '状態:' + (e.status === 'done' ? '回収済' : '未回収') + '\n\n';
+  });
 });
 return text;
 }
@@ -1125,17 +1225,20 @@ w.document.close();
 }
 function printBoard() {
 if (!boardEntries.length) { alert('本日の予定がありません'); return; }
-const rows = boardEntries.map(e => {
-  const timeLabel = e.timeType === 'am' ? '午前' : e.timeType === 'pm' ? '午後' : (e.customTime || '');
-  return '<tr><td>' + timeLabel + '</td><td>' + (e.companyName || '') + '</td><td>' + (e.pickupPlace || '') + '</td><td>' + arrLabel(e.workers) + '</td><td>' + (e.truck || '') + '</td><td>' + (e.belongings || '') + '</td><td>' + (e.status === 'done' ? '回収済' : '未回収') + '</td></tr>';
-}).join('');
+function rowsFor(lt) {
+  return boardEntries.filter(e => (e.listType || 'normal') === lt).map(e => {
+    const timeLabel = e.timeType === 'am' ? '午前' : e.timeType === 'pm' ? '午後' : (e.customTime || '');
+    return '<tr><td>' + timeLabel + '</td><td>' + (e.companyName || '') + '</td><td>' + (e.pickupPlace || '') + '</td><td>' + arrLabel(e.workers) + '</td><td>' + (e.truck || '') + '</td><td>' + (e.belongings || '') + '</td><td>' + (e.status === 'done' ? '回収済' : '未回収') + '</td></tr>';
+  }).join('');
+}
 const w = window.open('', '_blank');
 w.document.write(
   '<html><head><meta charset="UTF-8"><title>配車予定 ' + currentDate + '</title>' +
-  '<style>body{font-family:sans-serif;padding:30px;} h1{border-bottom:2px solid #1D3557;padding-bottom:8px;}' +
-  'table{border-collapse:collapse;width:100%;margin-top:16px;} td,th{border:1px solid #ccc;padding:8px 10px;font-size:13px;text-align:left;} th{background:#f0f0f0;}</style></head><body>' +
+  '<style>body{font-family:sans-serif;padding:30px;} h1{border-bottom:2px solid #1D3557;padding-bottom:8px;} h2{color:#1D3557;margin-top:24px;}' +
+  'table{border-collapse:collapse;width:100%;margin-top:10px;} td,th{border:1px solid #ccc;padding:8px 10px;font-size:13px;text-align:left;} th{background:#f0f0f0;}</style></head><body>' +
   '<h1>配車予定:' + formatBigDate(currentDate) + '</h1>' +
-  '<table><tr><th>時間帯</th><th>会社名</th><th>場所</th><th>作業員</th><th>車</th><th>持ち物</th><th>状態</th></tr>' + rows + '</table>' +
+  '<h2>常務</h2><table><tr><th>時間帯</th><th>会社名</th><th>場所</th><th>作業員</th><th>車</th><th>持ち物</th><th>状態</th></tr>' + rowsFor('jomu') + '</table>' +
+  '<h2>通常</h2><table><tr><th>時間帯</th><th>会社名</th><th>場所</th><th>作業員</th><th>車</th><th>持ち物</th><th>状態</th></tr>' + rowsFor('normal') + '</table>' +
   '<button onclick="window.close()" style="width:100%;padding:14px;border:none;border-radius:8px;background:#eee;color:#333;font-size:15px;margin-top:16px;">閉じる</button>' +
   '<scr' + 'ipt>window.print();<\/scr' + 'ipt></body></html>'
 );
@@ -1143,11 +1246,18 @@ w.document.close();
 }
 
 // ---------- 取引先一覧 ----------
+function switchClientMode(mode) {
+clientListMode = mode;
+document.getElementById('clientModeNormalBtn').classList.toggle('active', mode === 'normal');
+document.getElementById('clientModeJomuBtn').classList.toggle('active', mode === 'jomu');
+renderClientList();
+}
 function renderClientList() {
 const div = document.getElementById('clientListArea');
 if (!div) return;
-if (!clients.length) { div.innerHTML = '<div class="empty">取引先がまだ登録されていません</div>'; return; }
-div.innerHTML = clients.map(c => {
+const list = clientListMode === 'jomu' ? clientsJomu : clients;
+if (!list.length) { div.innerHTML = '<div class="empty">取引先がまだ登録されていません</div>'; return; }
+div.innerHTML = list.map(c => {
   return '<div class="card" onclick="openEditClient(\'' + c.id + '\')">' +
     '<h2 style="margin:0;font-size:17px;color:#1D3557;">' + c.name + '</h2>' +
     (c.address ? '<div style="color:#666;font-size:13px;margin-top:4px;">' + c.address + '</div>' : '') +
@@ -1156,11 +1266,18 @@ div.innerHTML = clients.map(c => {
 }).join('');
 }
 let selectedClientManifest = 'なし';
+let selectedClientEtc = 'なし';
 function selectClientManifest(v) {
 selectedClientManifest = v;
 document.getElementById('clientManifestNashi').classList.toggle('active', v === 'なし');
 document.getElementById('clientManifestAri').classList.toggle('active', v === 'あり');
 document.getElementById('clientManifestDigitalWrap').style.display = (v === 'あり') ? 'block' : 'none';
+}
+function selectClientEtc(v) {
+selectedClientEtc = v;
+document.getElementById('clientEtcNashi').classList.toggle('active', v === 'なし');
+document.getElementById('clientEtcAri').classList.toggle('active', v === 'あり');
+document.getElementById('clientEtcCountWrap').style.display = (v === 'あり') ? 'block' : 'none';
 }
 function fillClientShuhinChecks(selected) {
 const el = document.getElementById('clientShuhinChecks');
@@ -1184,7 +1301,7 @@ db.collection('pickupSettings').doc('shuhinOptions').set({names: newList}).then(
 });
 }
 function openAddClient() {
-document.getElementById('clientModalTitle').textContent = '取引先を追加';
+document.getElementById('clientModalTitle').textContent = '取引先を追加(' + (clientListMode === 'jomu' ? '常務' : '通常') + ')';
 document.getElementById('editClientId').value = '';
 document.getElementById('deleteClientRow').style.display = 'none';
 document.getElementById('clientNameInput').value = '';
@@ -1197,15 +1314,18 @@ document.getElementById('clientQtyFlecon').value = '';
 document.getElementById('clientQtyAnaAki').value = '';
 document.getElementById('clientQtyAnaNashi').value = '';
 document.getElementById('clientQtyBox').value = '';
+selectClientEtc('なし');
+document.getElementById('clientEtcCountInput').value = '1枚';
 selectClientManifest('なし');
 document.getElementById('clientManifestDigitalInput').checked = false;
 document.getElementById('clientNotesInput').value = '';
 document.getElementById('clientModal').classList.add('show');
 }
 function openEditClient(id) {
-const c = clients.find(x => x.id === id);
+const list = clientListMode === 'jomu' ? clientsJomu : clients;
+const c = list.find(x => x.id === id);
 if (!c) return;
-document.getElementById('clientModalTitle').textContent = '取引先を編集';
+document.getElementById('clientModalTitle').textContent = '取引先を編集(' + (clientListMode === 'jomu' ? '常務' : '通常') + ')';
 document.getElementById('editClientId').value = c.id;
 document.getElementById('deleteClientRow').style.display = 'flex';
 document.getElementById('clientNameInput').value = c.name || '';
@@ -1219,6 +1339,8 @@ document.getElementById('clientQtyFlecon').value = items.flecon || '';
 document.getElementById('clientQtyAnaAki').value = items.anaAkiDrum || '';
 document.getElementById('clientQtyAnaNashi').value = items.anaNashiDrum || '';
 document.getElementById('clientQtyBox').value = items.box || '';
+selectClientEtc(c.etcUse === 'あり' ? 'あり' : 'なし');
+document.getElementById('clientEtcCountInput').value = c.etcCount || '1枚';
 selectClientManifest(c.manifestHas === 'あり' ? 'あり' : 'なし');
 document.getElementById('clientManifestDigitalInput').checked = !!c.manifestDigital;
 document.getElementById('clientNotesInput').value = c.notes || '';
@@ -1239,19 +1361,22 @@ const data = {
     anaNashiDrum: parseInt(document.getElementById('clientQtyAnaNashi').value) || 0,
     box: parseInt(document.getElementById('clientQtyBox').value) || 0
   },
+  etcUse: selectedClientEtc,
+  etcCount: selectedClientEtc === 'あり' ? document.getElementById('clientEtcCountInput').value : '',
   manifestHas: selectedClientManifest,
   manifestDigital: selectedClientManifest === 'あり' ? document.getElementById('clientManifestDigitalInput').checked : false,
   notes: document.getElementById('clientNotesInput').value.trim(),
   updatedAt: firebase.firestore.FieldValue.serverTimestamp()
 };
+const collectionName = clientListMode === 'jomu' ? 'haishaClientsJomu' : 'haishaClients';
 const editId = document.getElementById('editClientId').value;
 if (editId) {
-  db.collection('haishaClients').doc(editId).update(data)
+  db.collection(collectionName).doc(editId).update(data)
     .then(() => closeModal('clientModal'))
     .catch(err => alert('保存に失敗しました: ' + err.message));
 } else {
   data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-  db.collection('haishaClients').add(data)
+  db.collection(collectionName).add(data)
     .then(() => closeModal('clientModal'))
     .catch(err => alert('保存に失敗しました: ' + err.message));
 }
@@ -1260,7 +1385,8 @@ function deleteClient() {
 const editId = document.getElementById('editClientId').value;
 if (!editId) return;
 if (!confirm('この取引先を削除しますか?')) return;
-db.collection('haishaClients').doc(editId).delete()
+const collectionName = clientListMode === 'jomu' ? 'haishaClientsJomu' : 'haishaClients';
+db.collection(collectionName).doc(editId).delete()
   .then(() => closeModal('clientModal'))
   .catch(err => alert('削除に失敗しました: ' + err.message));
 }
@@ -1280,6 +1406,8 @@ renderChips('clientWorkerChips', collectorList, 'removeWorkerSetting');
 renderChips('clientTruckChips', truckList, 'removeTruckSetting');
 renderChips('clientShuhinChips', shuhinOptions, 'removeShuhinOption');
 renderChips('clientManifestChips', manifestTypeList, 'removeManifestTypeOption');
+renderChips('clientShukkaDestChips', shukkaDestinations, 'removeShukkaDestination');
+renderChips('clientShukkaItemChips', shukkaItemsList, 'removeShukkaItemOption');
 }
 function addWorkerFromClientTab() {
 const input = document.getElementById('newClientWorkerInput');
@@ -1317,29 +1445,51 @@ function removeManifestTypeOption(name) {
 if (!confirm(name + 'をマニフェスト内容一覧から削除しますか?')) return;
 db.collection('pickupSettings').doc('manifestTypes').set({names: manifestTypeList.filter(n => n !== name)});
 }
+function addShukkaDestination() {
+const input = document.getElementById('newShukkaDestInput');
+const name = input.value.trim();
+if (!name) return;
+const newList = shukkaDestinations.includes(name) ? shukkaDestinations : shukkaDestinations.concat([name]);
+db.collection('pickupSettings').doc('shukkaDestinations').set({names: newList}).then(() => input.value = '');
+}
+function removeShukkaDestination(name) {
+if (!confirm(name + 'を出荷先一覧から削除しますか?')) return;
+db.collection('pickupSettings').doc('shukkaDestinations').set({names: shukkaDestinations.filter(n => n !== name)});
+}
+function addShukkaItemOption() {
+const input = document.getElementById('newShukkaItemInput');
+const name = input.value.trim();
+if (!name) return;
+const newList = shukkaItemsList.includes(name) ? shukkaItemsList : shukkaItemsList.concat([name]);
+db.collection('pickupSettings').doc('shukkaItems').set({names: newList}).then(() => input.value = '');
+}
+function removeShukkaItemOption(name) {
+if (!confirm(name + 'を出荷品一覧から削除しますか?')) return;
+db.collection('pickupSettings').doc('shukkaItems').set({names: shukkaItemsList.filter(n => n !== name)});
+}
 
 // ---------- 設定(作業員のお弁当設定) ----------
 function renderSettingsLists() {
 const wDiv = document.getElementById('workerSettingsList');
 if (!collectorList.length) {
   wDiv.innerHTML = '<div style="color:#999;font-size:14px;">まだ登録されていません</div>';
-} else {
-  const bentoLabels = {rice: 'お弁当', side: 'おかずのみ', noodle: '麺', shellfish_no: '甲殻類不可'};
-  wDiv.innerHTML = collectorList.map(name => {
-    const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
-    const safe = name.replace(/'/g,"\\'");
-    const btns = ['rice','side','noodle','shellfish_no'].map(key =>
-      '<button type="button" class="' + (profile.bentoType === key ? 'active' : '') + '" onclick="updateWorkerBentoType(\'' + safe + '\',\'' + key + '\')">' + bentoLabels[key] + '</button>'
-    ).join('');
-    return '<div class="settingsRow" style="flex-direction:column;align-items:stretch;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-      '<span class="rName">' + name + '</span>' +
-      '<button class="delX" onclick="removeWorkerSetting(\'' + safe + '\')">削除</button>' +
-      '</div>' +
-      '<div class="timeTypeRow" style="margin-top:8px;">' + btns + '</div>' +
-      '</div>';
-  }).join('');
+  return;
 }
+const bentoLabels = {rice: 'お弁当', side: 'おかずのみ', noodle: '麺', shellfish_no: '甲殻類不可'};
+wDiv.innerHTML = collectorList.map(name => {
+  const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
+  const safe = name.replace(/'/g,"\\'");
+  const btns = ['rice','side','noodle','shellfish_no'].map(key =>
+    '<button type="button" class="' + (profile.bentoType === key ? 'active' : '') + '" onclick="updateWorkerBentoType(\'' + safe + '\',\'' + key + '\')">' + bentoLabels[key] + '</button>'
+  ).join('');
+  return '<div class="settingsRow" style="flex-direction:column;align-items:stretch;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+    '<span class="rName">' + name + '</span>' +
+    '<button class="delX" onclick="removeWorkerSetting(\'' + safe + '\')">削除</button>' +
+    '</div>' +
+    '<div class="timeTypeRow" style="margin-top:8px;">' + btns + '</div>' +
+    '</div>';
+}).join('');
 }
 function addWorkerWithProfile() {
 const input = document.getElementById('newWorkerInput');
