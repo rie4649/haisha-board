@@ -802,14 +802,15 @@ db.collection('haishaBoard').doc(entryId).update({status: newStatus});
 function attendanceBlockHtml(name, idx) {
 const state = boardAttendanceData[name] || {offType: 'none'};
 const labels = {none: '出勤', am_off: '午前休み', pm_off: '午後休み', full_off: '1日休み'};
-const teamLabels = {A: 'A班', B: 'B班', free: 'Free', part: 'バイト'};
+const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
 const btnClass = state.offType === 'none' ? '' : 'off';
 const btnLabel = labels[state.offType];
 const safe = name.replace(/'/g,"\\'");
-const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63', part: '#00897b'};
+const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
 const teamTag = state.team ? '<span style="background:' + teamColors[state.team] + ';color:white;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;">' + teamLabels[state.team] + '</span>' : '';
+const partTag = state.part ? '<span style="background:#00897b;color:white;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;">バイト</span>' : '';
 return '<div class="attendBlock">' +
-  '<div class="attendRow"><span>' + teamTag + name + '</span>' +
+  '<div class="attendRow"><span>' + teamTag + partTag + name + '</span>' +
   '<button class="miniOffBtn ' + btnClass + '" onclick="toggleOffSelector(' + idx + ')">' + btnLabel + '</button></div>' +
   '<div class="offSelectorRow" id="offSel_' + idx + '" style="display:none;">' +
     ['none','am_off','pm_off','full_off'].map(key =>
@@ -834,6 +835,7 @@ let attendanceTeamFilter = 'all';
 function matchesTeamFilter(name) {
 if (attendanceTeamFilter === 'all') return true;
 const state = boardAttendanceData[name] || {};
+if (attendanceTeamFilter === 'part') return !!state.part;
 if (attendanceTeamFilter === 'A') return state.team === 'A' || state.team === 'free';
 if (attendanceTeamFilter === 'B') return state.team === 'B' || state.team === 'free';
 return state.team === attendanceTeamFilter;
@@ -2050,15 +2052,16 @@ if (!collectorList.length) {
   return;
 }
 const bentoLabels = {rice: 'お弁当', side: 'おかずのみ', noodle: '麺', shellfish_no: '甲殻類不可', none: '不要'};
-const teamLabels = {A: 'A班', B: 'B班', free: 'Free', part: 'バイト'};
+const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
 wDiv.innerHTML = collectorList.map((name, i) => {
   const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
   const safe = name.replace(/'/g,"\\'");
   const currentTeam = (boardAttendanceData[name] && boardAttendanceData[name].team) || null;
-  const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63', part: '#00897b'};
-  const teamBtns = ['A','B','free','part'].map(t =>
+  const isPart = !!(boardAttendanceData[name] && boardAttendanceData[name].part);
+  const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
+  const teamBtns = ['A','B','free'].map(t =>
     '<button type="button" class="pillBtn" style="' + (currentTeam === t ? 'background:' + teamColors[t] + ';color:white;border-color:' + teamColors[t] + ';' : '') + '" onclick="assignWorkerTeam(\'' + safe + '\',\'' + t + '\')">' + teamLabels[t] + '</button>'
-  ).join('');
+  ).join('') + '<button type="button" class="pillBtn" style="' + (isPart ? 'background:#00897b;color:white;border-color:#00897b;' : '') + '" onclick="toggleWorkerPart(\'' + safe + '\')">バイト</button>';
   const btns = ['rice','side','noodle','shellfish_no','none'].map(key =>
     '<button type="button" class="pillBtn ' + (profile.bentoType === key ? 'active' : '') + '" onclick="updateWorkerBentoType(\'' + safe + '\',\'' + key + '\')">' + bentoLabels[key] + '</button>'
   ).join('');
@@ -2091,7 +2094,12 @@ function updateWorkerBentoType(name, bentoType) { updateWorkerProfileField(name,
 function assignWorkerTeam(name, team) {
 const existing = boardAttendanceData[name] || {};
 const newTeam = existing.team === team ? null : team;
-const merged = Object.assign({}, boardAttendanceData, {[name]: {offType: 'none', team: newTeam}});
+const merged = Object.assign({}, boardAttendanceData, {[name]: {offType: 'none', team: newTeam, part: existing.part || false}});
+db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true});
+}
+function toggleWorkerPart(name) {
+const existing = boardAttendanceData[name] || {};
+const merged = Object.assign({}, boardAttendanceData, {[name]: {offType: existing.offType || 'none', team: existing.team || null, part: !existing.part}});
 db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true});
 }
 function removeWorkerSetting(name) {
