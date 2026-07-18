@@ -822,17 +822,35 @@ const btnClass = state.offType === 'none' ? '' : 'off';
 const btnLabel = labels[state.offType];
 const safe = name.replace(/'/g,"\\'");
 const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
-const teamTag = state.team ? '<span style="background:' + teamColors[state.team] + ';color:white;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;">' + teamLabels[state.team] + '</span>' : '';
+const teamTagLabel = state.team ? teamLabels[state.team] : '班設定';
+const teamTagColor = state.team ? teamColors[state.team] : '#999';
 const partTag = state.part ? '<span style="background:#00897b;color:white;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;">バイト</span>' : '';
 return '<div class="attendBlock">' +
-  '<div class="attendRow"><span>' + teamTag + partTag + name + '</span>' +
+  '<div class="attendRow"><span>' +
+    '<button type="button" onclick="toggleTeamSelector(' + idx + ')" style="background:' + teamTagColor + ';color:white;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;border:none;">' + teamTagLabel + '</button>' +
+    partTag + name + '</span>' +
   '<button class="miniOffBtn ' + btnClass + '" onclick="toggleOffSelector(' + idx + ')">' + btnLabel + '</button></div>' +
+  '<div class="offSelectorRow" id="teamSel_' + idx + '" style="display:none;">' +
+    ['A','B','free'].map(t =>
+      '<button type="button" class="' + (state.team === t ? 'active' : '') + '" onclick="assignWorkerTeamAndCollapse(\'' + safe + '\',\'' + t + '\',' + idx + ')">' + teamLabels[t] + '</button>'
+    ).join('') +
+  '</div>' +
   '<div class="offSelectorRow" id="offSel_' + idx + '" style="display:none;">' +
     ['none','am_off','pm_off','full_off'].map(key =>
       '<button type="button" class="' + (state.offType === key ? 'active' : '') + '" onclick="setWorkerOffTypeAndCollapse(\'' + safe + '\',\'' + key + '\',' + idx + ')">' + labels[key] + '</button>'
     ).join('') +
   '</div>' +
 '</div>';
+}
+function toggleTeamSelector(idx) {
+const el = document.getElementById('teamSel_' + idx);
+if (!el) return;
+el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
+}
+function assignWorkerTeamAndCollapse(name, team, idx) {
+assignWorkerTeam(name, team);
+const el = document.getElementById('teamSel_' + idx);
+if (el) el.style.display = 'none';
 }
 function toggleOffSelector(idx) {
 const el = document.getElementById('offSel_' + idx);
@@ -851,8 +869,8 @@ function matchesTeamFilter(name) {
 if (attendanceTeamFilter === 'all') return true;
 const state = boardAttendanceData[name] || {};
 if (attendanceTeamFilter === 'part') return !!state.part;
-if (attendanceTeamFilter === 'A') return state.team === 'A' || state.team === 'free';
-if (attendanceTeamFilter === 'B') return state.team === 'B' || state.team === 'free';
+if (attendanceTeamFilter === 'A') return state.team === 'A' || state.team === 'free' || !!state.part;
+if (attendanceTeamFilter === 'B') return state.team === 'B' || state.team === 'free' || !!state.part;
 return state.team === attendanceTeamFilter;
 }
 function setAttendanceTeamFilter(f) {
@@ -2067,16 +2085,9 @@ if (!collectorList.length) {
   return;
 }
 const bentoLabels = {rice: 'お弁当', side: 'おかずのみ', noodle: '麺', shellfish_no: '甲殻類不可', none: '不要'};
-const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
 wDiv.innerHTML = collectorList.map((name, i) => {
   const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
   const safe = name.replace(/'/g,"\\'");
-  const currentTeam = (boardAttendanceData[name] && boardAttendanceData[name].team) || null;
-  const isPart = !!(boardAttendanceData[name] && boardAttendanceData[name].part);
-  const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
-  const teamBtns = ['A','B','free'].map(t =>
-    '<button type="button" class="pillBtn" style="' + (currentTeam === t ? 'background:' + teamColors[t] + ';color:white;border-color:' + teamColors[t] + ';' : '') + '" onclick="assignWorkerTeam(\'' + safe + '\',\'' + t + '\')">' + teamLabels[t] + '</button>'
-  ).join('') + '<button type="button" class="pillBtn" style="' + (isPart ? 'background:#00897b;color:white;border-color:#00897b;' : '') + '" onclick="toggleWorkerPart(\'' + safe + '\')">バイト</button>';
   const btns = ['rice','side','noodle','shellfish_no','none'].map(key =>
     '<button type="button" class="pillBtn ' + (profile.bentoType === key ? 'active' : '') + '" onclick="updateWorkerBentoType(\'' + safe + '\',\'' + key + '\')">' + bentoLabels[key] + '</button>'
   ).join('');
@@ -2086,8 +2097,6 @@ wDiv.innerHTML = collectorList.map((name, i) => {
   return '<div class="settingsRow">' +
     moveBtns +
     '<span class="rName" style="flex:0 0 auto;">' + name + '</span>' +
-    teamBtns +
-    '<span class="pillDivider"></span>' +
     btns +
     '<button class="delX" onclick="removeWorkerSetting(\'' + safe + '\')">削除</button>' +
     '</div>';
