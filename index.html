@@ -182,6 +182,12 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div class="boardSidebar">
     <div class="sideBox">
       <h4>👥 出勤者</h4>
+      <div class="timeTypeRow" id="attendanceFilterRow" style="margin-bottom:8px;">
+        <button type="button" class="active" onclick="setAttendanceTeamFilter('all')" data-filter="all">全員</button>
+        <button type="button" onclick="setAttendanceTeamFilter('A')" data-filter="A">A班</button>
+        <button type="button" onclick="setAttendanceTeamFilter('B')" data-filter="B">B班</button>
+        <button type="button" onclick="setAttendanceTeamFilter('free')" data-filter="free">Free</button>
+      </div>
       <div id="attendanceWorkingBox"></div>
     </div>
     <div class="sideBox">
@@ -786,9 +792,10 @@ const state = boardAttendanceData[name] || {offType: 'none'};
 const labels = {none: '出勤', am_off: '午前休み', pm_off: '午後休み', full_off: '1日休み'};
 const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
 const btnClass = state.offType === 'none' ? '' : 'off';
-const btnLabel = state.offType === 'none' ? '休み' : labels[state.offType];
+const btnLabel = labels[state.offType];
 const safe = name.replace(/'/g,"\\'");
-const teamTag = state.team ? '<span style="color:#1D3557;font-size:11px;font-weight:bold;">[' + teamLabels[state.team] + ']</span> ' : '';
+const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
+const teamTag = state.team ? '<span style="background:' + teamColors[state.team] + ';color:white;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;">' + teamLabels[state.team] + '</span>' : '';
 return '<div class="attendBlock">' +
   '<div class="attendRow"><span>' + teamTag + name + '</span>' +
   '<button class="miniOffBtn ' + btnClass + '" onclick="toggleOffSelector(' + idx + ')">' + btnLabel + '</button></div>' +
@@ -811,6 +818,14 @@ db.collection('bentoDaily').doc(currentDate).set({entries: merged}, {merge: true
 const el = document.getElementById('offSel_' + idx);
 if (el) el.style.display = 'none';
 }
+let attendanceTeamFilter = 'all';
+function setAttendanceTeamFilter(f) {
+attendanceTeamFilter = f;
+document.querySelectorAll('#attendanceFilterRow button').forEach(btn => {
+  btn.classList.toggle('active', btn.dataset.filter === f);
+});
+renderAttendanceBoxes();
+}
 function renderAttendanceBoxes() {
 const workingBox = document.getElementById('attendanceWorkingBox');
 const offBox = document.getElementById('attendanceOffBox');
@@ -829,8 +844,20 @@ collectorList.forEach(name => {
   if (state.offType === 'am_off') amOff.push(name);
   if (state.offType === 'pm_off') pmOff.push(name);
 });
-workingBox.innerHTML = '<div style="font-size:13px;color:#555;margin-bottom:6px;">出勤:' + presentCount + '名 / 全体:' + collectorList.length + '名</div>' +
-  collectorList.map((name, idx) => attendanceBlockHtml(name, idx)).join('');
+const filteredEntries = collectorList
+  .map((name, idx) => ({name, idx}))
+  .filter(o => {
+    if (attendanceTeamFilter === 'all') return true;
+    const state = boardAttendanceData[o.name] || {};
+    return state.team === attendanceTeamFilter;
+  });
+const filteredPresentCount = filteredEntries.filter(o => {
+  const state = boardAttendanceData[o.name] || {offType: 'none'};
+  return state.offType !== 'full_off';
+}).length;
+const filterLabel = attendanceTeamFilter === 'all' ? '全員' : attendanceTeamFilter === 'A' ? 'A班' : attendanceTeamFilter === 'B' ? 'B班' : 'Free';
+workingBox.innerHTML = '<div style="font-size:13px;color:#555;margin-bottom:6px;">' + filterLabel + ' 出勤:' + filteredPresentCount + '名 / 該当:' + filteredEntries.length + '名</div>' +
+  (filteredEntries.length ? filteredEntries.map(o => attendanceBlockHtml(o.name, o.idx)).join('') : '<div style="color:#999;font-size:13px;">該当者がいません</div>');
 if (!fullOff.length && !amOff.length && !pmOff.length) {
   offBox.innerHTML = '<div style="color:#999;font-size:13px;">本日休みの人はいません</div>';
 } else {
@@ -1894,8 +1921,9 @@ wDiv.innerHTML = collectorList.map((name, i) => {
   const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
   const safe = name.replace(/'/g,"\\'");
   const currentTeam = (boardAttendanceData[name] && boardAttendanceData[name].team) || null;
+  const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
   const teamBtns = ['A','B','free'].map(t =>
-    '<button type="button" class="pillBtn ' + (currentTeam === t ? 'active' : '') + '" onclick="assignWorkerTeam(\'' + safe + '\',\'' + t + '\')">' + teamLabels[t] + '</button>'
+    '<button type="button" class="pillBtn" style="' + (currentTeam === t ? 'background:' + teamColors[t] + ';color:white;border-color:' + teamColors[t] + ';' : '') + '" onclick="assignWorkerTeam(\'' + safe + '\',\'' + t + '\')">' + teamLabels[t] + '</button>'
   ).join('');
   const btns = ['rice','side','noodle','shellfish_no','none'].map(key =>
     '<button type="button" class="pillBtn ' + (profile.bentoType === key ? 'active' : '') + '" onclick="updateWorkerBentoType(\'' + safe + '\',\'' + key + '\')">' + bentoLabels[key] + '</button>'
