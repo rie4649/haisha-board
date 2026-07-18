@@ -190,6 +190,7 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
         <button type="button" onclick="setAttendanceTeamFilter('free')" data-filter="free">Free</button>
         <button type="button" onclick="setAttendanceTeamFilter('part')" data-filter="part">バイト</button>
       </div>
+      <button type="button" onclick="openPartTimeModal()" style="width:100%;padding:8px;border:1px solid #00897b;background:white;color:#00897b;border-radius:8px;font-size:13px;font-weight:bold;margin-bottom:8px;">＋ バイト追加</button>
       <div id="attendanceWorkingBox"></div>
     </div>
     <div class="sideBox">
@@ -442,7 +443,7 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 <div class="overlay" id="partTimeModal">
 <div class="sheet">
   <div class="closeBtn" onclick="closeModal('partTimeModal')">閉じる ✕</div>
-  <h2>今日のバイトを選ぶ</h2>
+  <h2 id="partTimeModalTitle">今日のバイトを選ぶ</h2>
   <label>どの班の応援として追加しますか?</label>
   <div class="timeTypeRow" id="partTeamButtons">
     <button type="button" data-team="A" onclick="selectPartTeam('A')">A班</button>
@@ -866,7 +867,6 @@ document.querySelectorAll('#attendanceFilterRow button').forEach(btn => {
   btn.classList.toggle('active', btn.dataset.filter === f);
 });
 renderAttendanceBoxes();
-if (f === 'part') openPartTimeModal();
 }
 function renderAttendanceBoxes() {
 const workingBox = document.getElementById('attendanceWorkingBox');
@@ -2131,7 +2131,9 @@ document.querySelectorAll('#partTeamButtons button').forEach(btn => {
 });
 }
 function openPartTimeModal() {
-selectPartTeam(null);
+const preTeam = (attendanceTeamFilter === 'A' || attendanceTeamFilter === 'B') ? attendanceTeamFilter : null;
+selectPartTeam(preTeam);
+document.getElementById('partTimeModalTitle').textContent = preTeam ? (preTeam + '班のバイトを選ぶ') : '今日のバイトを選ぶ';
 const el = document.getElementById('partTimeChecks');
 if (!collectorList.length) { el.innerHTML = '<span style="color:#999;font-size:13px;">作業員一覧が未登録です</span>'; document.getElementById('partTimeModal').classList.add('show'); return; }
 el.innerHTML = collectorList.map(name => {
