@@ -1,1 +1,882 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>配車ボード</title>
+<meta name="theme-color" content="#1D3557">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<script>
+(function(){
+if ('serviceWorker' in navigator) {
+  var swCode = "self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',e=>{});";
+  var swBlob = new Blob([swCode], {type: 'application/javascript'});
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(function(){});
+  });
+}
+})();
+</script>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+  background: #f2f4f6; color: #222; padding-bottom: 40px;
+}
+.stickyTop { position: sticky; top: 0; z-index: 20; }
+header { background: #1D3557; color: white; padding: 14px 16px; }
+header h1 { margin: 0; font-size: 18px; }
+.headTop { display: flex; justify-content: space-between; align-items: center; }
+#installBtn { background: white; color: #1D3557; border: none; border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: bold; white-space: nowrap; }
 
+.tabBar { display: flex; background: white; border-bottom: 1px solid #ddd; }
+.tabBar button { flex: 1; padding: 12px 4px; border: none; background: white; color: #666; font-size: 13px; font-weight: bold; border-bottom: 3px solid transparent; }
+.tabBar button.active { color: #1D3557; border-bottom-color: #1D3557; }
+
+.section { display: none; }
+.section.active { display: block; }
+
+.dateBar { padding: 14px 16px 6px; text-align: center; }
+.dateBar .bigDate { font-size: 21px; font-weight: bold; color: #1D3557; }
+.dateNav { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.dateNav button { background: white; border: 1px solid #ccc; border-radius: 8px; padding: 8px 14px; font-size: 14px; color: #1D3557; }
+.dateNav input[type=date] { padding: 8px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+.todayBtn { background: #1D3557 !important; color: white !important; border: none !important; }
+
+.boardList { padding: 10px 12px 90px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 620px) { .boardList { grid-template-columns: 1fr; } }
+.card { background: white; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); position: relative; }
+.badge { display: inline-block; font-size: 13px; font-weight: bold; padding: 4px 10px; border-radius: 20px; margin-bottom: 8px; margin-right: 6px; }
+.badge.am { background: #ffe8cc; color: #a85c00; }
+.badge.pm { background: #d6e4ff; color: #1d3f8f; }
+.badge.custom { background: #e6e6e6; color: #444; }
+.badge.etc { background: #eee0ff; color: #5b2d91; }
+.topRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.phoneBtn { background: #2e7d32; color: white; border: none; border-radius: 8px; padding: 6px 10px; font-size: 13px; text-decoration: none; display: inline-block; }
+.statusBtn { border: none; border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: bold; }
+.statusBtn.pending { background: #ffcdd2; color: #b71c1c; }
+.statusBtn.done { background: #c8e6c9; color: #256029; }
+.card .companyName { font-size: 19px; font-weight: bold; color: #1D3557; display: inline-block; }
+.card .companyName.linked { text-decoration: underline; text-decoration-style: dotted; }
+.rowLine { font-size: 15px; color: #333; margin-top: 4px; display: flex; gap: 6px; }
+.rowLine .ico { flex-shrink: 0; }
+.empty { text-align: center; color: #999; padding: 60px 20px; font-size: 15px; }
+
+.fab { position: fixed; right: 20px; bottom: 24px; width: 58px; height: 58px; border-radius: 50%; background: #1D3557; color: white; font-size: 30px; border: none; box-shadow: 0 3px 8px rgba(0,0,0,0.3); z-index: 5; }
+
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: flex-end; }
+.overlay.show { display: flex; }
+.sheet { background: white; width: 100%; max-height: 90vh; overflow-y: auto; border-radius: 16px 16px 0 0; padding: 20px; }
+.sheet h2 { margin-top: 0; font-size: 17px; }
+.closeBtn { text-align: right; font-size: 14px; color: #666; margin-bottom: 6px; }
+label { display: block; font-size: 13px; color: #555; margin: 14px 0 4px; }
+input[type=text], input[type=tel], input[type=time], input[type=date], textarea, select {
+  width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px;
+}
+textarea { resize: vertical; min-height: 50px; }
+.timeTypeRow { display: flex; gap: 8px; margin-top: 6px; }
+.timeTypeRow button { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; background: white; font-size: 14px; color: #333; }
+.timeTypeRow button.active { background: #1D3557; color: white; border-color: #1D3557; }
+.searchBoxWrap { position: relative; }
+.searchSuggest { display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #eee; border-radius: 0 0 8px 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 15; max-height: 220px; overflow-y: auto; }
+.searchSuggest.show { display: block; }
+.searchSuggest .sItem { padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #eee; }
+.locSelectWrap { margin-top: 8px; }
+.shuhinToggle { width: 100%; text-align: left; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; background: white; font-size: 15px; color: #222; }
+.shuhinPanel { margin-top: 8px; border: 1px solid #eee; border-radius: 8px; padding: 10px; background: #fafafa; max-height: 200px; overflow-y: auto; display: none; }
+.checkrow { display: flex; gap: 16px; flex-wrap: wrap; }
+.checkrow label { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 15px; color: #222; }
+.addRow { display: flex; gap: 8px; margin-top: 8px; }
+.addRow input { flex: 1; }
+.addRow button { padding: 10px 16px; border: none; border-radius: 8px; background: #1D3557; color: white; white-space: nowrap; }
+.btnrow { display: flex; gap: 10px; margin-top: 20px; }
+button.primary, button.secondary, button.danger { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 15px; }
+button.primary { background: #1D3557; color: white; }
+button.secondary { background: #eee; color: #333; }
+button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
+
+.detailRow { margin-bottom: 10px; font-size: 15px; }
+.detailRow .label { color: #888; font-size: 12px; }
+
+/* 弁当タブ */
+.bentoSummary { margin: 12px 16px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.bentoSummary .big { font-size: 26px; font-weight: bold; color: #1D3557; }
+.bentoSummary .sub { font-size: 14px; color: #555; margin-top: 6px; }
+.bentoSummary .warn { font-size: 13px; color: #c0392b; margin-top: 8px; }
+.copyBtn { width: 100%; margin-top: 10px; padding: 10px; border: 1px solid #1D3557; background: white; color: #1D3557; border-radius: 8px; font-size: 14px; }
+.workerList { padding: 0 16px 40px; }
+.workerCard { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.workerCard .wName { font-size: 16px; font-weight: bold; color: #1D3557; }
+.wTags { display: inline-flex; gap: 6px; margin-left: 8px; }
+.wTag { font-size: 11px; background: #eef0f3; color: #555; padding: 2px 7px; border-radius: 10px; }
+.offTypeRow { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.offTypeRow button { flex: 1; min-width: 70px; padding: 9px 4px; border: 1px solid #ccc; border-radius: 8px; background: white; font-size: 13px; color: #333; }
+.offTypeRow button.active { background: #1D3557; color: white; border-color: #1D3557; }
+.needBentoRow { margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+
+/* 設定タブ */
+.settingsSection { padding: 16px; }
+.settingsSection h3 { color: #1D3557; margin-bottom: 8px; }
+.infoBox { background: #eef4ff; border-radius: 10px; padding: 12px 14px; font-size: 14px; color: #333; margin-bottom: 16px; }
+.infoBox button { margin-top: 8px; width: 100%; padding: 10px; border: none; border-radius: 8px; background: #1D3557; color: white; font-size: 14px; }
+.settingsRow { display: flex; align-items: center; gap: 8px; background: white; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); flex-wrap: wrap; }
+.settingsRow .rName { font-weight: bold; flex: 1; min-width: 80px; }
+.settingsRow select { width: auto; padding: 6px 8px; font-size: 13px; }
+.settingsRow .delX { color: #c0392b; border: 1px solid #c0392b; border-radius: 6px; padding: 4px 10px; font-size: 12px; background: white; }
+.settingsRow label.inlineChk { display: flex; align-items: center; gap: 4px; font-size: 13px; margin: 0; }
+</style>
+</head>
+<body>
+
+<div class="stickyTop">
+<header>
+<div class="headTop">
+  <h1 id="headerTitle">🚚 配車ボード</h1>
+  <button id="installBtn">📲 アプリ追加</button>
+</div>
+</header>
+<div class="tabBar">
+  <button id="tabBtnBoard" onclick="switchMainTab('board')">🚚 配車ボード</button>
+  <button id="tabBtnBento" onclick="switchMainTab('bento')">🍱 お弁当</button>
+  <button id="tabBtnSettings" onclick="switchMainTab('settings')">⚙️ 設定</button>
+</div>
+</div>
+
+<!-- 配車ボード -->
+<div class="section active" id="section-board">
+<div class="dateBar">
+  <div class="bigDate" id="bigDateLabel"></div>
+  <div class="dateNav">
+    <button onclick="changeDay(-1)">← 前日</button>
+    <input type="date" id="datePicker">
+    <button onclick="changeDay(1)">翌日 →</button>
+  </div>
+  <div class="dateNav">
+    <button class="todayBtn" onclick="goToday()">📍 今日に戻る</button>
+  </div>
+</div>
+<div class="boardList" id="boardList"></div>
+<button class="fab" onclick="openAddEntry()">＋</button>
+</div>
+
+<!-- お弁当 -->
+<div class="section" id="section-bento">
+<div class="dateBar">
+  <div class="bigDate" id="bentoBigDateLabel"></div>
+  <div class="dateNav">
+    <button onclick="changeBentoDay(-1)">← 前日</button>
+    <input type="date" id="bentoDatePicker">
+    <button onclick="changeBentoDay(1)">翌日 →</button>
+  </div>
+  <div class="dateNav">
+    <button class="todayBtn" onclick="goBentoToday()">📍 今日に戻る</button>
+  </div>
+</div>
+<div class="bentoSummary" id="bentoSummaryBox"></div>
+<div class="workerList" id="bentoWorkerList"></div>
+</div>
+
+<!-- 設定 -->
+<div class="section" id="section-settings">
+<div class="settingsSection">
+  <div class="infoBox">
+    取引先の情報は「取引先管理」アプリのデータとそのまま連動しています(<span id="companiesCount">0</span>件を読み込み中)。取引先の追加・編集はそちらのアプリで行ってください。
+    <button onclick="window.open('https://rie4649.github.io/hikitorisaki-kanri/','_blank')">取引先管理を開く</button>
+  </div>
+
+  <h3>作業員一覧(お弁当設定も含む・取引先管理と共有)</h3>
+  <div id="workerSettingsList"></div>
+  <div class="addRow">
+    <input type="text" id="newWorkerInput" placeholder="例:川村">
+    <button onclick="addWorkerWithProfile()">追加</button>
+  </div>
+
+  <h3 style="margin-top:24px;">トラック一覧(取引先管理と共有)</h3>
+  <div id="truckSettingsList"></div>
+  <div class="addRow">
+    <input type="text" id="newTruckSettingInput" placeholder="例:2tトラック">
+    <button onclick="addTruckSetting()">追加</button>
+  </div>
+</div>
+</div>
+
+<!-- 追加/編集(配車ボード) -->
+<div class="overlay" id="entryModal">
+<div class="sheet">
+  <div class="closeBtn" onclick="closeModal('entryModal')">閉じる ✕</div>
+  <h2 id="entryModalTitle">予定を追加</h2>
+  <input type="hidden" id="editEntryId">
+
+  <label>時間帯</label>
+  <div class="timeTypeRow">
+    <button type="button" id="timeBtnAm" onclick="selectTimeType('am')">午前</button>
+    <button type="button" id="timeBtnPm" onclick="selectTimeType('pm')">午後</button>
+    <button type="button" id="timeBtnCustom" onclick="selectTimeType('custom')">時間指定</button>
+  </div>
+  <div id="customTimeWrap" style="display:none;">
+    <input type="time" id="customTimeInput">
+  </div>
+
+  <label>会社名</label>
+  <div class="searchBoxWrap">
+    <input type="text" id="companyInput" placeholder="会社名を入力(取引先一覧から候補が出ます)" autocomplete="off">
+    <div class="searchSuggest" id="companySuggest"></div>
+  </div>
+  <div class="locSelectWrap" id="entryLocSelectWrap" style="display:none;">
+    <label>拠点を選択</label>
+    <select id="entryLocSelect"></select>
+  </div>
+
+  <label>電話番号</label>
+  <input type="tel" id="phoneInput" placeholder="例:0268-00-0000">
+
+  <label>引き取り場所</label>
+  <input type="text" id="pickupPlaceInput" placeholder="例:本社倉庫、〇〇現場など">
+
+  <label>作業員(複数可)</label>
+  <div>
+    <button type="button" class="shuhinToggle" id="workersToggleBtn" onclick="toggleWorkersPanel()">作業員を選択 ▾</button>
+    <div class="checkrow shuhinPanel" id="workersChecks"></div>
+    <div class="addRow">
+      <input type="text" id="workerQuickInput" placeholder="候補にない名前を追加">
+      <button type="button" onclick="quickAddWorker()">追加</button>
+    </div>
+  </div>
+
+  <label>車</label>
+  <div class="searchBoxWrap">
+    <input type="text" id="truckInput" placeholder="車を入力(トラック一覧から候補が出ます)" autocomplete="off">
+    <div class="searchSuggest" id="truckSuggest"></div>
+  </div>
+
+  <label>持ち物</label>
+  <textarea id="belongingsInput" placeholder="例:穴あきドラム3本、フレコン2枚"></textarea>
+
+  <label>ETC使用</label>
+  <div class="timeTypeRow">
+    <button type="button" id="etcBtnNashi" onclick="selectEtc('なし')">なし</button>
+    <button type="button" id="etcBtnAri" onclick="selectEtc('あり')">あり</button>
+  </div>
+  <div id="etcCountWrap" style="display:none;">
+    <label>ETC必要枚数</label>
+    <select id="etcCountInput">
+      <option value="1枚">1枚</option><option value="2枚">2枚</option><option value="3枚">3枚</option>
+      <option value="4枚">4枚</option><option value="5枚">5枚</option><option value="6枚">6枚</option>
+      <option value="7枚">7枚</option><option value="8枚">8枚</option><option value="9枚">9枚</option><option value="10枚">10枚</option>
+    </select>
+  </div>
+
+  <div class="btnrow">
+    <button class="secondary" onclick="closeModal('entryModal')">キャンセル</button>
+    <button class="primary" onclick="saveEntry()">保存</button>
+  </div>
+  <div class="btnrow" id="deleteEntryRow" style="display:none;">
+    <button class="danger" onclick="deleteEntry()">この予定を削除</button>
+  </div>
+</div>
+</div>
+
+<!-- 取引先詳細(読み取り専用) -->
+<div class="overlay" id="companyDetailModal">
+<div class="sheet">
+  <div class="closeBtn" onclick="closeModal('companyDetailModal')">閉じる ✕</div>
+  <h2 id="cdName"></h2>
+  <div class="detailRow"><div class="label">拠点</div><div id="cdLocName"></div></div>
+  <div class="detailRow"><div class="label">住所</div><div id="cdAddress"></div></div>
+  <div class="detailRow"><div class="label">電話</div><div id="cdPhone"></div></div>
+  <div class="detailRow"><div class="label">取引先の担当者名</div><div id="cdClientContact"></div></div>
+  <div class="detailRow"><div class="label">取引先担当者の電話</div><div id="cdClientContactPhone"></div></div>
+  <div class="detailRow"><div class="label">担当者(社内)</div><div id="cdStaff"></div></div>
+  <div class="detailRow"><div class="label">マニフェスト</div><div id="cdManifest"></div></div>
+  <div class="detailRow"><div class="label">登録トラック</div><div id="cdTrucks"></div></div>
+  <div class="detailRow"><div class="label">持ち物(登録)</div><div id="cdItems"></div></div>
+  <div class="detailRow"><div class="label">回収品</div><div id="cdShuhin"></div></div>
+  <div class="detailRow"><div class="label">備考</div><div id="cdNotes"></div></div>
+</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+apiKey: "AIzaSyD99MxOMnGplSQjV7830bS7-gdCBSM9DGY",
+authDomain: "sekine-store.firebaseapp.com",
+projectId: "sekine-store",
+storageBucket: "sekine-store.firebasestorage.app",
+messagingSenderId: "781856496751",
+appId: "1:781856496751:web:e2e1e5de4cd803415a819a"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let deferredInstallPrompt = null;
+const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstallPrompt = e; });
+installBtn.addEventListener('click', async () => {
+if (deferredInstallPrompt) {
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+} else {
+  alert('iPhoneの場合:画面下(または上)の共有ボタン(□に↑)をタップ→「ホーム画面に追加」を選んでください。\n\nAndroid/パソコンの場合:このボタンを押すとインストール確認が出るはずです。出ない場合はブラウザの「…」メニューから「アプリをインストール」を選んでください。');
+}
+});
+window.addEventListener('appinstalled', () => { installBtn.style.display = 'none'; });
+
+let companies = [];
+let truckList = [];
+let collectorList = [];
+let workerProfiles = {};
+let boardEntries = [];
+let currentDate = todayStr();
+let bentoDate = todayStr();
+let bentoDailyData = {};
+let boardUnsub = null;
+let bentoUnsub = null;
+let activeMainTab = 'board';
+
+function todayStr() {
+const d = new Date();
+return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function newId() { return 'e_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function arrLabel(list) { return (list && list.length) ? list.join('・') : ''; }
+
+function switchMainTab(tab) {
+activeMainTab = tab;
+['board','bento','settings'].forEach(t => {
+  document.getElementById('section-' + t).classList.toggle('active', t === tab);
+  document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === tab);
+});
+const titles = {board: '🚚 配車ボード', bento: '🍱 お弁当管理', settings: '⚙️ 設定'};
+document.getElementById('headerTitle').textContent = titles[tab];
+if (tab === 'bento') renderBentoSummaryAndList();
+if (tab === 'settings') renderSettingsLists();
+}
+
+db.collection('companies').orderBy('name').onSnapshot(snapshot => {
+companies = [];
+snapshot.forEach(doc => companies.push({id: doc.id, ...doc.data()}));
+document.getElementById('companiesCount').textContent = companies.length;
+});
+function subscribeList(docName, setter) {
+db.collection('pickupSettings').doc(docName).onSnapshot(doc => {
+  setter((doc.exists && doc.data().names) ? doc.data().names : []);
+  if (activeMainTab === 'bento') renderBentoSummaryAndList();
+  if (activeMainTab === 'settings') renderSettingsLists();
+});
+}
+subscribeList('truckList', v => truckList = v);
+subscribeList('collectorList', v => collectorList = v);
+db.collection('pickupSettings').doc('workerBentoProfiles').onSnapshot(doc => {
+workerProfiles = (doc.exists && doc.data().profiles) ? doc.data().profiles : {};
+if (activeMainTab === 'bento') renderBentoSummaryAndList();
+if (activeMainTab === 'settings') renderSettingsLists();
+});
+
+function companyMatchesKeyword(c, keyword) {
+const kw = keyword.trim().toLowerCase();
+if (!kw) return false;
+if ((c.name || '').toLowerCase().includes(kw)) return true;
+if ((c.yomigana || '').includes(keyword.trim())) return true;
+return false;
+}
+
+const WEEKDAYS = ['日','月','火','水','木','金','土'];
+function formatBigDate(dateStr) {
+const parts = dateStr.split('-').map(Number);
+const d = new Date(parts[0], parts[1]-1, parts[2]);
+return parts[0] + '年' + parts[1] + '月' + parts[2] + '日(' + WEEKDAYS[d.getDay()] + ')';
+}
+
+// ---------- 配車ボード ----------
+const datePicker = document.getElementById('datePicker');
+datePicker.value = currentDate;
+datePicker.addEventListener('change', () => { currentDate = datePicker.value; loadDate(); });
+function changeDay(diff) {
+const parts = currentDate.split('-').map(Number);
+const d = new Date(parts[0], parts[1]-1, parts[2] + diff);
+currentDate = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+datePicker.value = currentDate;
+loadDate();
+}
+function goToday() { currentDate = todayStr(); datePicker.value = currentDate; loadDate(); }
+
+function loadDate() {
+document.getElementById('bigDateLabel').textContent = formatBigDate(currentDate);
+if (boardUnsub) boardUnsub();
+boardUnsub = db.collection('haishaBoard').where('date', '==', currentDate).onSnapshot(snapshot => {
+  boardEntries = [];
+  snapshot.forEach(doc => boardEntries.push({id: doc.id, ...doc.data()}));
+  boardEntries.sort((a,b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
+  renderBoard();
+});
+}
+
+function timeBadgeHtml(e) {
+if (e.timeType === 'am') return '<span class="badge am">午前</span>';
+if (e.timeType === 'pm') return '<span class="badge pm">午後</span>';
+if (e.timeType === 'custom') return '<span class="badge custom">' + (e.customTime || '時間指定') + '</span>';
+return '';
+}
+
+function renderBoard() {
+const list = document.getElementById('boardList');
+if (boardEntries.length === 0) {
+  list.innerHTML = '<div class="empty" style="grid-column:1/-1;">この日の予定はまだありません。<br>右下の＋ボタンから追加してください。</div>';
+  return;
+}
+list.innerHTML = boardEntries.map(e => {
+  const linked = !!e.companyId;
+  const status = e.status || 'pending';
+  let html = '<div class="card" onclick="openEditEntry(\'' + e.id + '\')">';
+  html += '<div class="topRow">';
+  if (e.phone) html += '<a class="phoneBtn" href="tel:' + e.phone + '" onclick="event.stopPropagation();">📞 ' + e.phone + '</a>';
+  html += '<button class="statusBtn ' + status + '" onclick="event.stopPropagation();toggleStatus(\'' + e.id + '\')">' + (status === 'done' ? '回収済' : '未回収') + '</button>';
+  html += timeBadgeHtml(e);
+  if (e.etcUse === 'あり') html += '<span class="badge etc">ETC ' + (e.etcCount || '') + '</span>';
+  html += '</div>';
+  html += '<span class="companyName' + (linked ? ' linked' : '') + '" onclick="event.stopPropagation();' + (linked ? "showCompanyDetail('" + e.companyId + "')" : "") + '">' + (e.companyName || '(会社名未入力)') + '</span>';
+  if (e.pickupPlace) html += '<div class="rowLine"><span class="ico">📍</span><span>' + e.pickupPlace + '</span></div>';
+  if (e.workers && e.workers.length) html += '<div class="rowLine"><span class="ico">👷</span><span>' + arrLabel(e.workers) + '</span></div>';
+  if (e.truck) html += '<div class="rowLine"><span class="ico">🚚</span><span>' + e.truck + '</span></div>';
+  if (e.belongings) html += '<div class="rowLine"><span class="ico">📦</span><span>' + e.belongings + '</span></div>';
+  html += '</div>';
+  return html;
+}).join('');
+}
+function toggleStatus(entryId) {
+const e = boardEntries.find(x => x.id === entryId);
+if (!e) return;
+const newStatus = (e.status === 'done') ? 'pending' : 'done';
+db.collection('haishaBoard').doc(entryId).update({status: newStatus});
+}
+
+// ---- 会社詳細(読み取り専用) ----
+function manifestLabelFor(c) {
+if (!c || c.manifestHas !== 'あり') return 'なし';
+const parts = ['あり'];
+if (c.manifestType && c.manifestType.length) parts.push(c.manifestType.join('・'));
+return parts.join(' / ');
+}
+function itemsLabelFor(items) {
+if (!items) return 'なし';
+const parts = [];
+if (items.anaAkiDrum) parts.push('穴あきドラム' + items.anaAkiDrum + '本');
+if (items.anaNashiDrum) parts.push('穴なしドラム' + items.anaNashiDrum + '本');
+if (items.flecon) parts.push('フレコン' + items.flecon + '枚');
+if (items.box) parts.push('箱' + items.box + '個');
+if (items.otherText) parts.push(items.otherText);
+return parts.length ? parts.join('・') : 'なし';
+}
+function showCompanyDetail(companyId) {
+const c = companies.find(x => x.id === companyId);
+if (!c) { alert('取引先一覧の情報が見つかりませんでした'); return; }
+const loc = (c.locations || [])[0] || {};
+document.getElementById('cdName').textContent = c.name;
+document.getElementById('cdLocName').textContent = loc.locationName || 'なし';
+document.getElementById('cdAddress').textContent = loc.address || 'なし';
+document.getElementById('cdPhone').textContent = loc.phone || 'なし';
+document.getElementById('cdClientContact').textContent = c.clientContact || 'なし';
+document.getElementById('cdClientContactPhone').textContent = c.clientContactPhone || 'なし';
+document.getElementById('cdStaff').textContent = c.staff || 'なし';
+document.getElementById('cdManifest').textContent = manifestLabelFor(c);
+document.getElementById('cdTrucks').textContent = arrLabel(c.trucks) || 'なし';
+document.getElementById('cdItems').textContent = itemsLabelFor(c.items);
+document.getElementById('cdShuhin').textContent = arrLabel(c.shuhinSelected) || 'なし';
+document.getElementById('cdNotes').textContent = c.notes || 'なし';
+document.getElementById('companyDetailModal').classList.add('show');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// ---- 追加/編集モーダル ----
+let selectedTimeType = 'am';
+let selectedCompanyId = null;
+let selectedLocId = null;
+let selectedEtc = 'なし';
+
+function selectTimeType(t) {
+selectedTimeType = t;
+['am','pm','custom'].forEach(k => {
+  document.getElementById('timeBtn' + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle('active', k === t);
+});
+document.getElementById('customTimeWrap').style.display = (t === 'custom') ? 'block' : 'none';
+}
+function selectEtc(v) {
+selectedEtc = v;
+document.getElementById('etcBtnNashi').classList.toggle('active', v === 'なし');
+document.getElementById('etcBtnAri').classList.toggle('active', v === 'あり');
+document.getElementById('etcCountWrap').style.display = (v === 'あり') ? 'block' : 'none';
+}
+
+function openAddEntry() {
+document.getElementById('entryModalTitle').textContent = '予定を追加';
+document.getElementById('editEntryId').value = '';
+document.getElementById('deleteEntryRow').style.display = 'none';
+selectedTimeType = 'am';
+selectTimeType('am');
+document.getElementById('customTimeInput').value = '';
+document.getElementById('companyInput').value = '';
+selectedCompanyId = null; selectedLocId = null;
+document.getElementById('entryLocSelectWrap').style.display = 'none';
+document.getElementById('phoneInput').value = '';
+document.getElementById('pickupPlaceInput').value = '';
+document.getElementById('truckInput').value = '';
+document.getElementById('belongingsInput').value = '';
+selectEtc('なし');
+document.getElementById('etcCountInput').value = '1枚';
+fillWorkersChecks([]);
+document.getElementById('workersChecks').style.display = 'none';
+document.getElementById('entryModal').classList.add('show');
+}
+
+function openEditEntry(entryId) {
+const e = boardEntries.find(x => x.id === entryId);
+if (!e) return;
+document.getElementById('entryModalTitle').textContent = '予定を編集';
+document.getElementById('editEntryId').value = e.id;
+document.getElementById('deleteEntryRow').style.display = 'flex';
+selectedTimeType = e.timeType || 'am';
+selectTimeType(selectedTimeType);
+document.getElementById('customTimeInput').value = e.customTime || '';
+document.getElementById('companyInput').value = e.companyName || '';
+selectedCompanyId = e.companyId || null;
+selectedLocId = e.locationId || null;
+document.getElementById('entryLocSelectWrap').style.display = 'none';
+document.getElementById('phoneInput').value = e.phone || '';
+document.getElementById('pickupPlaceInput').value = e.pickupPlace || '';
+document.getElementById('truckInput').value = e.truck || '';
+document.getElementById('belongingsInput').value = e.belongings || '';
+selectEtc(e.etcUse === 'あり' ? 'あり' : 'なし');
+document.getElementById('etcCountInput').value = e.etcCount || '1枚';
+fillWorkersChecks(e.workers || []);
+document.getElementById('workersChecks').style.display = 'none';
+document.getElementById('entryModal').classList.add('show');
+}
+
+function fillWorkersChecks(selected) {
+const el = document.getElementById('workersChecks');
+if (collectorList.length === 0) {
+  el.innerHTML = '<span style="color:#999;font-size:13px;">作業員一覧が未登録です(設定タブから登録できます)</span>';
+  return;
+}
+el.innerHTML = collectorList.map(name =>
+  '<label><input type="checkbox" class="workerCk" value="' + name + '" ' + (selected.includes(name) ? 'checked' : '') + '> ' + name + '</label>'
+).join('');
+}
+function toggleWorkersPanel() {
+const panel = document.getElementById('workersChecks');
+panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'flex' : 'none';
+}
+function quickAddWorker() {
+const input = document.getElementById('workerQuickInput');
+const name = input.value.trim();
+if (!name) return;
+const checkedNow = Array.from(document.querySelectorAll('.workerCk:checked')).map(el => el.value);
+addWorkerToListsIfMissing(name);
+fillWorkersChecks(checkedNow.concat([name]));
+document.getElementById('workersChecks').style.display = 'flex';
+input.value = '';
+}
+function addWorkerToListsIfMissing(name) {
+if (!collectorList.includes(name)) {
+  const newList = collectorList.concat([name]);
+  db.collection('pickupSettings').doc('collectorList').set({names: newList});
+}
+if (!workerProfiles[name]) {
+  const newProfiles = Object.assign({}, workerProfiles, {[name]: {bentoType: 'noodle', shellfish: false}});
+  db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newProfiles});
+}
+}
+
+// 会社名 入力候補
+const companyInput = document.getElementById('companyInput');
+companyInput.addEventListener('input', () => {
+selectedCompanyId = null; selectedLocId = null;
+document.getElementById('entryLocSelectWrap').style.display = 'none';
+renderCompanySuggest();
+});
+document.addEventListener('click', (e) => {
+if (!e.target.closest('#companyInput') && !e.target.closest('#companySuggest')) {
+  document.getElementById('companySuggest').classList.remove('show');
+}
+if (!e.target.closest('#truckInput') && !e.target.closest('#truckSuggest')) {
+  document.getElementById('truckSuggest').classList.remove('show');
+}
+});
+function renderCompanySuggest() {
+const keyword = companyInput.value.trim();
+const box = document.getElementById('companySuggest');
+if (!keyword) { box.classList.remove('show'); return; }
+const matches = companies.filter(c => companyMatchesKeyword(c, keyword)).slice(0, 8);
+if (!matches.length) { box.classList.remove('show'); return; }
+box.innerHTML = matches.map(c => '<div class="sItem" onclick="selectCompanySuggest(\'' + c.id + '\')">' + c.name + '</div>').join('');
+box.classList.add('show');
+}
+function selectCompanySuggest(companyId) {
+const c = companies.find(x => x.id === companyId);
+if (!c) return;
+companyInput.value = c.name;
+selectedCompanyId = companyId;
+document.getElementById('companySuggest').classList.remove('show');
+const locs = c.locations || [];
+if (locs.length > 1) {
+  document.getElementById('entryLocSelectWrap').style.display = 'block';
+  const sel = document.getElementById('entryLocSelect');
+  sel.innerHTML = locs.map(l => '<option value="' + l.id + '">' + (l.locationName || '') + '</option>').join('');
+  sel.onchange = () => applyLocToFields(c, sel.value);
+  applyLocToFields(c, locs[0].id);
+} else if (locs.length === 1) {
+  document.getElementById('entryLocSelectWrap').style.display = 'none';
+  applyLocToFields(c, locs[0].id);
+}
+}
+function applyLocToFields(c, locId) {
+const loc = (c.locations || []).find(l => l.id === locId);
+if (!loc) return;
+selectedLocId = locId;
+const field = document.getElementById('pickupPlaceInput');
+if (!field.value.trim()) {
+  field.value = (loc.locationName && loc.locationName !== '本社' ? loc.locationName + ' ' : '') + (loc.address || '');
+}
+const phoneField = document.getElementById('phoneInput');
+if (!phoneField.value.trim() && loc.phone) phoneField.value = loc.phone;
+}
+
+// 車 入力候補
+const truckInput = document.getElementById('truckInput');
+truckInput.addEventListener('input', renderTruckSuggest);
+truckInput.addEventListener('focus', renderTruckSuggest);
+function renderTruckSuggest() {
+const keyword = truckInput.value.trim();
+const box = document.getElementById('truckSuggest');
+const matches = keyword ? truckList.filter(t => t.includes(keyword)) : truckList;
+if (!matches.length) { box.classList.remove('show'); return; }
+box.innerHTML = matches.slice(0,8).map(t => '<div class="sItem" onclick="selectTruckSuggest(\'' + t.replace(/'/g,"\\'") + '\')">' + t + '</div>').join('');
+box.classList.add('show');
+}
+function selectTruckSuggest(name) {
+truckInput.value = name;
+document.getElementById('truckSuggest').classList.remove('show');
+}
+
+function saveEntry() {
+const companyName = companyInput.value.trim();
+if (!companyName) { alert('会社名を入力してください'); return; }
+if (selectedTimeType === 'custom' && !document.getElementById('customTimeInput').value) {
+  alert('時間を入力してください');
+  return;
+}
+const workers = Array.from(document.querySelectorAll('.workerCk:checked')).map(el => el.value);
+const data = {
+  date: currentDate,
+  timeType: selectedTimeType,
+  customTime: selectedTimeType === 'custom' ? document.getElementById('customTimeInput').value : '',
+  companyName,
+  companyId: selectedCompanyId,
+  locationId: selectedLocId,
+  phone: document.getElementById('phoneInput').value.trim(),
+  pickupPlace: document.getElementById('pickupPlaceInput').value.trim(),
+  workers,
+  truck: truckInput.value.trim(),
+  belongings: document.getElementById('belongingsInput').value.trim(),
+  etcUse: selectedEtc,
+  etcCount: selectedEtc === 'あり' ? document.getElementById('etcCountInput').value : ''
+};
+const editId = document.getElementById('editEntryId').value;
+if (editId) {
+  db.collection('haishaBoard').doc(editId).update(data)
+    .then(() => closeModal('entryModal'))
+    .catch(err => alert('保存に失敗しました: ' + err.message));
+} else {
+  data.status = 'pending';
+  data.createdAtMs = Date.now();
+  data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+  db.collection('haishaBoard').add(data)
+    .then(() => closeModal('entryModal'))
+    .catch(err => alert('保存に失敗しました: ' + err.message));
+}
+}
+function deleteEntry() {
+const editId = document.getElementById('editEntryId').value;
+if (!editId) return;
+if (!confirm('この予定を削除しますか?')) return;
+db.collection('haishaBoard').doc(editId).delete()
+  .then(() => closeModal('entryModal'))
+  .catch(err => alert('削除に失敗しました: ' + err.message));
+}
+
+// ---------- お弁当 ----------
+const bentoDatePicker = document.getElementById('bentoDatePicker');
+bentoDatePicker.value = bentoDate;
+bentoDatePicker.addEventListener('change', () => { bentoDate = bentoDatePicker.value; loadBentoDate(); });
+function changeBentoDay(diff) {
+const parts = bentoDate.split('-').map(Number);
+const d = new Date(parts[0], parts[1]-1, parts[2] + diff);
+bentoDate = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+bentoDatePicker.value = bentoDate;
+loadBentoDate();
+}
+function goBentoToday() { bentoDate = todayStr(); bentoDatePicker.value = bentoDate; loadBentoDate(); }
+
+function loadBentoDate() {
+document.getElementById('bentoBigDateLabel').textContent = formatBigDate(bentoDate);
+if (bentoUnsub) bentoUnsub();
+bentoUnsub = db.collection('bentoDaily').doc(bentoDate).onSnapshot(doc => {
+  bentoDailyData = (doc.exists && doc.data().entries) ? doc.data().entries : {};
+  if (activeMainTab === 'bento') renderBentoSummaryAndList();
+});
+}
+
+function getWorkerState(name) {
+const saved = bentoDailyData[name];
+if (saved) return saved;
+return {offType: 'none', needBento: true};
+}
+function defaultNeedBento(offType) {
+return offType !== 'full_off';
+}
+
+let lastBentoSummary = {total: 0, noodle: 0, side: 0, shellfishNames: []};
+function renderBentoSummaryAndList() {
+if (!collectorList.length) {
+  document.getElementById('bentoSummaryBox').innerHTML = '<div class="sub">作業員一覧が未登録です。設定タブから登録してください。</div>';
+  document.getElementById('bentoWorkerList').innerHTML = '';
+  return;
+}
+let total = 0, noodle = 0, side = 0, unset = 0;
+const shellfishNames = [];
+collectorList.forEach(name => {
+  const state = getWorkerState(name);
+  if (!state.needBento) return;
+  total++;
+  const profile = workerProfiles[name];
+  if (!profile) { unset++; return; }
+  if (profile.bentoType === 'noodle') noodle++;
+  else if (profile.bentoType === 'side') side++;
+  if (profile.shellfish) shellfishNames.push(name);
+});
+let html = '<div class="big">本日のお弁当:' + total + '個</div>';
+html += '<div class="sub">麺:' + noodle + '個 ／ おかずのみ:' + side + '個' + (unset ? ' ／ 種類未設定:' + unset + '個' : '') + '</div>';
+if (shellfishNames.length) html += '<div class="warn">⚠️ 甲殻類が食べられない人:' + shellfishNames.join('・') + '</div>';
+if (unset) html += '<div class="warn">⚠️ 設定タブでお弁当の種類が未設定の人がいます</div>';
+html += '<button class="copyBtn" onclick="copyBentoSummary()">この内容をコピー</button>';
+document.getElementById('bentoSummaryBox').innerHTML = html;
+lastBentoSummary = {total, noodle, side, shellfishNames};
+
+const list = document.getElementById('bentoWorkerList');
+list.innerHTML = collectorList.map(name => {
+  const state = getWorkerState(name);
+  const profile = workerProfiles[name] || {};
+  const tags = [];
+  if (profile.bentoType === 'noodle') tags.push('麺');
+  else if (profile.bentoType === 'side') tags.push('おかずのみ');
+  else tags.push('種類未設定');
+  if (profile.shellfish) tags.push('🦐不可');
+  const offTypes = [['none','出勤'],['am_off','午前休み'],['pm_off','午後休み'],['full_off','1日休み']];
+  const offBtns = offTypes.map(([key,label]) =>
+    '<button type="button" class="' + (state.offType === key ? 'active' : '') + '" onclick="setWorkerOffType(\'' + name.replace(/'/g,"\\'") + '\',\'' + key + '\')">' + label + '</button>'
+  ).join('');
+  return '<div class="workerCard">' +
+    '<span class="wName">' + name + '</span>' +
+    '<span class="wTags">' + tags.map(t => '<span class="wTag">' + t + '</span>').join('') + '</span>' +
+    '<div class="offTypeRow">' + offBtns + '</div>' +
+    '<div class="needBentoRow"><label><input type="checkbox" ' + (state.needBento ? 'checked' : '') + ' onchange="setWorkerNeedBento(\'' + name.replace(/'/g,"\\'") + '\',this.checked)"> お弁当が必要</label></div>' +
+    '</div>';
+}).join('');
+}
+function saveBentoState(name, newState) {
+const merged = Object.assign({}, bentoDailyData, {[name]: newState});
+db.collection('bentoDaily').doc(bentoDate).set({entries: merged}, {merge: true});
+}
+function setWorkerOffType(name, offType) {
+const cur = getWorkerState(name);
+const newState = {offType, needBento: defaultNeedBento(offType)};
+saveBentoState(name, newState);
+}
+function setWorkerNeedBento(name, checked) {
+const cur = getWorkerState(name);
+saveBentoState(name, {offType: cur.offType, needBento: checked});
+}
+function copyBentoSummary() {
+const {total, noodle, side, shellfishNames} = lastBentoSummary;
+let text = formatBigDate(bentoDate) + ' のお弁当:合計' + total + '個(麺' + noodle + '・おかずのみ' + side + ')';
+if (shellfishNames.length) text += '\n甲殻類抜き必要:' + shellfishNames.join('・');
+if (navigator.clipboard && navigator.clipboard.writeText) {
+  navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(() => prompt('コピーしてください', text));
+} else {
+  prompt('コピーしてください', text);
+}
+}
+
+// ---------- 設定 ----------
+function renderSettingsLists() {
+const wDiv = document.getElementById('workerSettingsList');
+if (!collectorList.length) {
+  wDiv.innerHTML = '<div style="color:#999;font-size:14px;">まだ登録されていません</div>';
+} else {
+  wDiv.innerHTML = collectorList.map(name => {
+    const profile = workerProfiles[name] || {bentoType: 'noodle', shellfish: false};
+    const safe = name.replace(/'/g,"\\'");
+    return '<div class="settingsRow">' +
+      '<span class="rName">' + name + '</span>' +
+      '<select onchange="updateWorkerBentoType(\'' + safe + '\',this.value)">' +
+        '<option value="noodle" ' + (profile.bentoType === 'noodle' ? 'selected' : '') + '>麺</option>' +
+        '<option value="side" ' + (profile.bentoType === 'side' ? 'selected' : '') + '>おかずのみ</option>' +
+      '</select>' +
+      '<label class="inlineChk"><input type="checkbox" ' + (profile.shellfish ? 'checked' : '') + ' onchange="updateWorkerShellfish(\'' + safe + '\',this.checked)"> 甲殻類不可</label>' +
+      '<button class="delX" onclick="removeWorkerSetting(\'' + safe + '\')">削除</button>' +
+      '</div>';
+  }).join('');
+}
+const tDiv = document.getElementById('truckSettingsList');
+if (!truckList.length) {
+  tDiv.innerHTML = '<div style="color:#999;font-size:14px;">まだ登録されていません</div>';
+} else {
+  tDiv.innerHTML = truckList.map(name => {
+    const safe = name.replace(/'/g,"\\'");
+    return '<div class="settingsRow"><span class="rName">' + name + '</span><button class="delX" onclick="removeTruckSetting(\'' + safe + '\')">削除</button></div>';
+  }).join('');
+}
+}
+function addWorkerWithProfile() {
+const input = document.getElementById('newWorkerInput');
+const name = input.value.trim();
+if (!name) return;
+addWorkerToListsIfMissing(name);
+input.value = '';
+}
+function updateWorkerBentoType(name, bentoType) {
+const profile = Object.assign({bentoType: 'noodle', shellfish: false}, workerProfiles[name] || {}, {bentoType});
+const newProfiles = Object.assign({}, workerProfiles, {[name]: profile});
+db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newProfiles});
+}
+function updateWorkerShellfish(name, checked) {
+const profile = Object.assign({bentoType: 'noodle', shellfish: false}, workerProfiles[name] || {}, {shellfish: checked});
+const newProfiles = Object.assign({}, workerProfiles, {[name]: profile});
+db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: newProfiles});
+}
+function removeWorkerSetting(name) {
+if (!confirm(name + 'さんを作業員一覧から削除しますか?(配車ボードや取引先管理でも使われなくなります)')) return;
+db.collection('pickupSettings').doc('collectorList').set({names: collectorList.filter(n => n !== name)});
+}
+function addTruckSetting() {
+const input = document.getElementById('newTruckSettingInput');
+const name = input.value.trim();
+if (!name) return;
+const newList = truckList.includes(name) ? truckList : truckList.concat([name]);
+db.collection('pickupSettings').doc('truckList').set({names: newList}).then(() => input.value = '');
+}
+function removeTruckSetting(name) {
+if (!confirm(name + 'をトラック一覧から削除しますか?(配車ボードや取引先管理でも使われなくなります)')) return;
+db.collection('pickupSettings').doc('truckList').set({names: truckList.filter(n => n !== name)});
+}
+
+loadDate();
+loadBentoDate();
+</script>
+</body>
+</html>
