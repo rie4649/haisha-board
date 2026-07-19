@@ -308,16 +308,27 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
     <input type="time" id="customTimeInput">
   </div>
 
+  <label>マーク</label>
+  <div class="timeTypeRow">
+    <button type="button" id="entryMarkPhone" onclick="toggleEntryMark('phone')">☎️ 電話依頼</button>
+    <button type="button" id="entryMarkFast" onclick="toggleEntryMark('fast')">⚡ 早い人</button>
+    <button type="button" id="entryMarkSuper" onclick="toggleEntryMark('superPriority')">🔥 超優先</button>
+  </div>
+
   <label>会社名(引取先)</label>
   <div class="searchBoxWrap">
     <input type="text" id="companyInput" placeholder="会社名を入力(取引先一覧から候補が出ます)" autocomplete="off">
     <div class="searchSuggest" id="companySuggest"></div>
   </div>
 
-  <label>電話依頼(電話で連絡があった場合)</label>
-  <div class="timeTypeRow">
-    <button type="button" id="entryPhoneReqNashi" onclick="selectPhoneRequest(false)">なし</button>
-    <button type="button" id="entryPhoneReqAri" onclick="selectPhoneRequest(true)">あり</button>
+  <label>部署</label>
+  <input type="text" id="departmentInput" placeholder="例:製造部">
+
+  <label>担当者</label>
+  <input type="text" id="contactPersonInput" placeholder="例:山田様">
+
+  <div id="entryPinRow" style="display:none;margin-top:8px;">
+    <button type="button" id="entryPinBtn" class="pillBtn" style="width:100%;padding:10px;" onclick="toggleEntryPin()">📌 固定にする(毎日自動で配車ボードに追加)</button>
   </div>
 
   <label>電話番号</label>
@@ -865,6 +876,8 @@ const linked = !!e.companyId;
 const status = e.status || 'pending';
 let html = '<div class="card" onclick="openEditEntry(\'' + e.id + '\')">';
 html += '<div class="topRow">';
+if (e.superPriorityFlag) html += '<span class="badge" style="background:#ffcdd2;color:#b71c1c;">🔥 超優先</span>';
+if (e.fastFlag) html += '<span class="badge" style="background:#fff3cd;color:#8a6d00;">⚡ 早い人</span>';
 if (e.phoneRequest) html += '<span class="badge" style="background:#ffe0e0;color:#c0392b;">☎️ 電話依頼</span>';
 if (e.phone) html += '<a class="phoneBtn" href="tel:' + e.phone + '" onclick="event.stopPropagation();">📞 ' + e.phone + '</a>';
 html += '<button class="statusBtn ' + status + '" onclick="event.stopPropagation();toggleStatus(\'' + e.id + '\')">' + (status === 'done' ? '回収済' : '未回収') + '</button>';
@@ -872,6 +885,8 @@ html += timeBadgeHtml(e);
 if (e.etcUse === 'あり') html += '<span class="badge etc">ETC ' + (e.etcCount || '') + '</span>';
 html += '</div>';
 html += '<span class="companyName' + (linked ? ' linked' : '') + '" onclick="event.stopPropagation();' + (linked ? "showCompanyDetail('" + e.companyId + "')" : "") + '">' + (e.companyName || '(会社名未入力)') + '</span>';
+if (e.department) html += '<div class="rowLine"><span class="ico">🏢</span><span>' + e.department + '</span></div>';
+if (e.contactPerson) html += '<div class="rowLine"><span class="ico">🙋</span><span>' + e.contactPerson + '</span></div>';
 if (e.pickupPlace) html += '<div class="rowLine"><span class="ico">📍</span><span>' + e.pickupPlace + '</span></div>';
 if (e.workers && e.workers.length) html += '<div class="rowLine"><span class="ico">👷</span><span>' + arrLabel(e.workers) + '</span></div>';
 if (e.truck) html += '<div class="rowLine"><span class="ico">🚚</span><span>' + e.truck + '</span></div>';
@@ -1398,12 +1413,18 @@ let selectedTimeType = 'am';
 let selectedCompanyId = null;
 let selectedEtc = 'なし';
 let selectedEntryListType = 'normal';
-let selectedPhoneRequest = false;
 let selectedEntryManifest = 'なし';
-function selectPhoneRequest(v) {
-selectedPhoneRequest = v;
-document.getElementById('entryPhoneReqNashi').classList.toggle('active', !v);
-document.getElementById('entryPhoneReqAri').classList.toggle('active', v);
+let entryMarks = {phone: false, fast: false, superPriority: false};
+const entryMarkBtnIds = {phone: 'entryMarkPhone', fast: 'entryMarkFast', superPriority: 'entryMarkSuper'};
+function toggleEntryMark(key) {
+entryMarks[key] = !entryMarks[key];
+document.getElementById(entryMarkBtnIds[key]).classList.toggle('active', entryMarks[key]);
+}
+function setEntryMarks(marks) {
+entryMarks = {phone: !!marks.phone, fast: !!marks.fast, superPriority: !!marks.superPriority};
+Object.keys(entryMarkBtnIds).forEach(key => {
+  document.getElementById(entryMarkBtnIds[key]).classList.toggle('active', entryMarks[key]);
+});
 }
 function selectEntryManifest(v) {
 selectedEntryManifest = v;
@@ -1436,6 +1457,7 @@ document.getElementById('entryListTypeNormal').classList.toggle('active', t === 
 document.getElementById('entryListTypeJomu').classList.toggle('active', t === 'jomu');
 selectedCompanyId = null;
 companyInput.value = '';
+renderEntryPinRow();
 }
 function selectTimeType(t) {
 selectedTimeType = t;
@@ -1463,7 +1485,9 @@ selectTimeType('am');
 document.getElementById('customTimeInput').value = '';
 document.getElementById('companyInput').value = '';
 selectedCompanyId = null;
-selectPhoneRequest(false);
+setEntryMarks({});
+document.getElementById('departmentInput').value = '';
+document.getElementById('contactPersonInput').value = '';
 document.getElementById('phoneInput').value = '';
 document.getElementById('pickupPlaceInput').value = '';
 document.getElementById('truckInput').value = '';
@@ -1499,7 +1523,10 @@ selectTimeType(selectedTimeType);
 document.getElementById('customTimeInput').value = e.customTime || '';
 document.getElementById('companyInput').value = e.companyName || '';
 selectedCompanyId = e.companyId || null;
-selectPhoneRequest(!!e.phoneRequest);
+renderEntryPinRow();
+setEntryMarks({phone: e.phoneRequest, fast: e.fastFlag, superPriority: e.superPriorityFlag});
+document.getElementById('departmentInput').value = e.department || '';
+document.getElementById('contactPersonInput').value = e.contactPerson || '';
 document.getElementById('phoneInput').value = e.phone || '';
 document.getElementById('pickupPlaceInput').value = e.pickupPlace || '';
 document.getElementById('truckInput').value = e.truck || '';
@@ -1576,6 +1603,35 @@ if (!matches.length) { box.classList.remove('show'); return; }
 box.innerHTML = matches.map(c => '<div class="sItem" onclick="selectCompanySuggest(\'' + c.id + '\')">' + c.name + '</div>').join('');
 box.classList.add('show');
 }
+function renderEntryPinRow() {
+const row = document.getElementById('entryPinRow');
+const btn = document.getElementById('entryPinBtn');
+if (!selectedCompanyId) { row.style.display = 'none'; return; }
+const source = selectedEntryListType === 'jomu' ? clientsJomu : clients;
+const c = source.find(x => x.id === selectedCompanyId);
+if (!c) { row.style.display = 'none'; return; }
+row.style.display = 'block';
+if (c.pinned) {
+  btn.style.background = '#1D3557';
+  btn.style.color = 'white';
+  btn.style.borderColor = '#1D3557';
+  btn.textContent = '📌 固定中(タップで解除)';
+} else {
+  btn.style.background = 'white';
+  btn.style.color = '#333';
+  btn.style.borderColor = '#ccc';
+  btn.textContent = '📌 固定にする(毎日自動で配車ボードに追加)';
+}
+}
+function toggleEntryPin() {
+if (!selectedCompanyId) return;
+const collectionName = selectedEntryListType === 'jomu' ? 'haishaClientsJomu' : 'haishaClients';
+const source = selectedEntryListType === 'jomu' ? clientsJomu : clients;
+const c = source.find(x => x.id === selectedCompanyId);
+if (!c) return;
+db.collection(collectionName).doc(selectedCompanyId).update({pinned: !c.pinned})
+  .catch(err => alert('保存に失敗しました: ' + err.message));
+}
 function selectCompanySuggest(clientId) {
 const source = selectedEntryListType === 'jomu' ? clientsJomu : clients;
 const c = source.find(x => x.id === clientId);
@@ -1585,6 +1641,8 @@ selectedCompanyId = clientId;
 document.getElementById('companySuggest').classList.remove('show');
 const field = document.getElementById('pickupPlaceInput');
 if (!field.value.trim() && c.address) field.value = c.address;
+const contactPersonField = document.getElementById('contactPersonInput');
+if (!contactPersonField.value.trim() && c.contactName) contactPersonField.value = c.contactName;
 const phoneField = document.getElementById('phoneInput');
 if (!phoneField.value.trim() && c.contactPhone) phoneField.value = c.contactPhone;
 if (c.etcUse === 'あり') {
@@ -1602,6 +1660,7 @@ if (c.manifestHas === 'あり') {
   document.getElementById('entryManifestDigitalInput').checked = !!c.manifestDigital;
   fillEntryManifestTypeChecks(c.manifestTypeSelected || []);
 }
+renderEntryPinRow();
 }
 
 // 車 入力候補
@@ -1637,7 +1696,11 @@ const data = {
   customTime: selectedTimeType === 'custom' ? document.getElementById('customTimeInput').value : '',
   companyName,
   companyId: selectedCompanyId,
-  phoneRequest: selectedPhoneRequest,
+  phoneRequest: entryMarks.phone,
+  fastFlag: entryMarks.fast,
+  superPriorityFlag: entryMarks.superPriority,
+  department: document.getElementById('departmentInput').value.trim(),
+  contactPerson: document.getElementById('contactPersonInput').value.trim(),
   phone: document.getElementById('phoneInput').value.trim(),
   pickupPlace: document.getElementById('pickupPlaceInput').value.trim(),
   workers,
