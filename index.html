@@ -436,6 +436,10 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <label>メモ</label>
   <textarea id="taskNotesInput" placeholder="例:〇〇会社へ見積もり"></textarea>
 
+  <div style="margin-top:8px;">
+    <button type="button" id="taskPinBtn" class="pillBtn" style="width:100%;padding:10px;" onclick="toggleTaskPinned()">📌 固定にする(毎日自動で追加)</button>
+  </div>
+
   <div class="btnrow">
     <button class="secondary" onclick="closeModal('taskModal')">キャンセル</button>
     <button class="primary" onclick="saveTask()">保存</button>
@@ -475,6 +479,15 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div class="searchBoxWrap">
     <input type="text" id="shukkaTruckInput" placeholder="車を入力(トラック一覧から候補が出ます)" autocomplete="off">
     <div class="searchSuggest" id="shukkaTruckSuggest"></div>
+  </div>
+
+  <label>マーク</label>
+  <div class="timeTypeRow">
+    <button type="button" id="shukkaMarkFast" onclick="toggleShukkaFast()">⚡ 早い人</button>
+  </div>
+
+  <div style="margin-top:8px;">
+    <button type="button" id="shukkaPinBtn" class="pillBtn" style="width:100%;padding:10px;" onclick="toggleShukkaPinned()">📌 固定にする(毎日自動で追加)</button>
   </div>
 
   <div class="btnrow">
@@ -665,6 +678,8 @@ let shukkaDestinations = [];
 let shukkaItemsList = [];
 let taskTypes = [];
 let taskEntries = [];
+let shukkaTemplates = [];
+let taskTemplates = [];
 let workerProfiles = {};
 let boardEntries = [];
 let shukkaEntries = [];
@@ -797,6 +812,57 @@ missing.forEach(name => { updates[name] = defaultProfile(); });
 db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: updates}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
 }
 
+db.collection('shukkaTemplates').onSnapshot(snapshot => {
+shukkaTemplates = [];
+snapshot.forEach(doc => shukkaTemplates.push({id: doc.id, ...doc.data()}));
+ensurePinnedShukkaForDate();
+});
+function ensurePinnedShukkaForDate() {
+if (!currentDate || !shukkaTemplates.length) return;
+shukkaTemplates.forEach(t => {
+  const exists = shukkaEntries.some(e => e.templateId === t.id);
+  if (exists) return;
+  const data = {
+    date: currentDate,
+    companyName: t.companyName,
+    shippedItem: t.shippedItem || '',
+    workers: t.workers || [],
+    truck: t.truck || '',
+    fastFlag: t.fastFlag || false,
+    pinned: true,
+    templateId: t.id,
+    status: 'pending',
+    createdAtMs: Date.now(),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  db.collection('shukkaBoard').add(data).catch(err => console.error('固定出荷の自動追加に失敗:', err));
+});
+}
+db.collection('taskTemplates').onSnapshot(snapshot => {
+taskTemplates = [];
+snapshot.forEach(doc => taskTemplates.push({id: doc.id, ...doc.data()}));
+ensurePinnedTasksForDate();
+});
+function ensurePinnedTasksForDate() {
+if (!currentDate || !taskTemplates.length) return;
+taskTemplates.forEach(t => {
+  const exists = taskEntries.some(e => e.templateId === t.id);
+  if (exists) return;
+  const data = {
+    date: currentDate,
+    taskType: t.taskType,
+    workers: t.workers || [],
+    truck: t.truck || '',
+    notes: t.notes || '',
+    pinned: true,
+    templateId: t.id,
+    createdAtMs: Date.now(),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  db.collection('taskBoard').add(data).catch(err => console.error('固定業務の自動追加に失敗:', err));
+});
+}
+
 function companyMatchesKeyword(c, keyword) {
 const kw = keyword.trim().toLowerCase();
 if (!kw) return false;
@@ -845,6 +911,7 @@ shukkaUnsub = db.collection('shukkaBoard').where('date', '==', currentDate).onSn
   snapshot.forEach(doc => shukkaEntries.push({id: doc.id, ...doc.data()}));
   shukkaEntries.sort((a,b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
   renderShukkaBox();
+  ensurePinnedShukkaForDate();
 });
 if (taskUnsub) taskUnsub();
 taskUnsub = db.collection('taskBoard').where('date', '==', currentDate).onSnapshot(snapshot => {
@@ -852,6 +919,7 @@ taskUnsub = db.collection('taskBoard').where('date', '==', currentDate).onSnapsh
   snapshot.forEach(doc => taskEntries.push({id: doc.id, ...doc.data()}));
   taskEntries.sort((a,b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
   renderTaskBox();
+  ensurePinnedTasksForDate();
 });
 if (boardFreeNoteUnsub) boardFreeNoteUnsub();
 boardFreeNoteUnsub = db.collection('boardFreeNotes').doc(currentDate).onSnapshot(doc => {
@@ -1063,6 +1131,8 @@ box.innerHTML = shukkaEntries.map(s => {
   const status = s.status || 'pending';
   let html = '<div class="shukkaItem" onclick="openEditShukka(\'' + s.id + '\')">';
   html += '<button class="shukkaStatusBtn ' + status + '" onclick="event.stopPropagation();toggleShukkaStatus(\'' + s.id + '\')">' + (status === 'done' ? '出荷済' : '未出荷') + '</button>';
+  if (s.fastFlag) html += '<span style="background:#fff3cd;color:#8a6d00;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;">⚡早い人</span>';
+  if (s.pinned) html += '<span style="margin-right:4px;">📌</span>';
   html += '<span style="font-weight:bold;font-size:14px;">' + (s.companyName || '(未入力)') + '</span>';
   if (s.shippedItem) html += '<div class="rowLine" style="font-size:13px;">📦 ' + s.shippedItem + '</div>';
   if (s.workers && s.workers.length) html += '<div class="rowLine" style="font-size:13px;">👷 ' + arrLabel(s.workers) + '</div>';
@@ -1077,6 +1147,27 @@ if (!s) return;
 const newStatus = (s.status === 'done') ? 'pending' : 'done';
 db.collection('shukkaBoard').doc(id).update({status: newStatus});
 }
+let selectedShukkaFast = false;
+let selectedShukkaPinned = false;
+let shukkaTemplateId = null;
+function toggleShukkaFast() {
+selectedShukkaFast = !selectedShukkaFast;
+document.getElementById('shukkaMarkFast').classList.toggle('active', selectedShukkaFast);
+}
+function renderShukkaPinBtn() {
+const btn = document.getElementById('shukkaPinBtn');
+if (selectedShukkaPinned) {
+  btn.style.background = '#1D3557'; btn.style.color = 'white'; btn.style.borderColor = '#1D3557';
+  btn.textContent = '📌 固定中(タップで解除)';
+} else {
+  btn.style.background = 'white'; btn.style.color = '#333'; btn.style.borderColor = '#ccc';
+  btn.textContent = '📌 固定にする(毎日自動で追加)';
+}
+}
+function toggleShukkaPinned() {
+selectedShukkaPinned = !selectedShukkaPinned;
+renderShukkaPinBtn();
+}
 function openAddShukka() {
 document.getElementById('shukkaModalTitle').textContent = '出荷を追加';
 document.getElementById('editShukkaId').value = '';
@@ -1086,6 +1177,11 @@ document.getElementById('shukkaItemInput').value = '';
 document.getElementById('shukkaTruckInput').value = '';
 fillShukkaWorkersChecks([]);
 document.getElementById('shukkaWorkersChecks').style.display = 'none';
+selectedShukkaFast = false;
+document.getElementById('shukkaMarkFast').classList.remove('active');
+selectedShukkaPinned = false;
+shukkaTemplateId = null;
+renderShukkaPinBtn();
 document.getElementById('shukkaModal').classList.add('show');
 }
 function openEditShukka(id) {
@@ -1099,6 +1195,11 @@ document.getElementById('shukkaItemInput').value = s.shippedItem || '';
 document.getElementById('shukkaTruckInput').value = s.truck || '';
 fillShukkaWorkersChecks(s.workers || []);
 document.getElementById('shukkaWorkersChecks').style.display = 'none';
+selectedShukkaFast = !!s.fastFlag;
+document.getElementById('shukkaMarkFast').classList.toggle('active', selectedShukkaFast);
+selectedShukkaPinned = !!s.pinned;
+shukkaTemplateId = s.templateId || null;
+renderShukkaPinBtn();
 document.getElementById('shukkaModal').classList.add('show');
 }
 function fillShukkaWorkersChecks(selected) {
@@ -1164,25 +1265,51 @@ function saveShukka() {
 const companyName = shukkaCompanyInput.value.trim();
 if (!companyName) { alert('出荷先を入力してください'); return; }
 const workers = Array.from(document.querySelectorAll('.shukkaWorkerCk:checked')).map(el => el.value);
-const data = {
-  date: currentDate,
-  companyName,
-  shippedItem: shukkaItemInput.value.trim(),
-  workers,
-  truck: shukkaTruckInput.value.trim()
-};
+const truck = shukkaTruckInput.value.trim();
+const shippedItem = shukkaItemInput.value.trim();
 const editId = document.getElementById('editShukkaId').value;
-if (editId) {
-  db.collection('shukkaBoard').doc(editId).update(data)
-    .then(() => closeModal('shukkaModal'))
-    .catch(err => alert('保存に失敗しました: ' + err.message));
+
+function finalizeSaveShukka(templateId) {
+  const data = {
+    date: currentDate,
+    companyName,
+    shippedItem,
+    workers,
+    truck,
+    fastFlag: selectedShukkaFast,
+    pinned: selectedShukkaPinned,
+    templateId: templateId || null
+  };
+  if (editId) {
+    db.collection('shukkaBoard').doc(editId).update(data)
+      .then(() => closeModal('shukkaModal'))
+      .catch(err => alert('保存に失敗しました: ' + err.message));
+  } else {
+    data.status = 'pending';
+    data.createdAtMs = Date.now();
+    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    db.collection('shukkaBoard').add(data)
+      .then(() => closeModal('shukkaModal'))
+      .catch(err => alert('保存に失敗しました: ' + err.message));
+  }
+}
+
+if (selectedShukkaPinned) {
+  const templateData = {companyName, shippedItem, workers, truck, fastFlag: selectedShukkaFast};
+  if (shukkaTemplateId) {
+    db.collection('shukkaTemplates').doc(shukkaTemplateId).set(templateData, {merge: true})
+      .then(() => finalizeSaveShukka(shukkaTemplateId))
+      .catch(err => alert('保存に失敗しました: ' + err.message));
+  } else {
+    db.collection('shukkaTemplates').add(templateData)
+      .then(docRef => finalizeSaveShukka(docRef.id))
+      .catch(err => alert('保存に失敗しました: ' + err.message));
+  }
 } else {
-  data.status = 'pending';
-  data.createdAtMs = Date.now();
-  data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-  db.collection('shukkaBoard').add(data)
-    .then(() => closeModal('shukkaModal'))
-    .catch(err => alert('保存に失敗しました: ' + err.message));
+  if (shukkaTemplateId) {
+    db.collection('shukkaTemplates').doc(shukkaTemplateId).delete().catch(() => {});
+  }
+  finalizeSaveShukka(null);
 }
 }
 function deleteShukka() {
@@ -1201,7 +1328,7 @@ if (!box) return;
 if (!taskEntries.length) { box.innerHTML = '<div style="color:#999;font-size:13px;">まだ業務予定がありません</div>'; return; }
 box.innerHTML = taskEntries.map(t => {
   let html = '<div class="shukkaItem" onclick="openEditTask(\'' + t.id + '\')">';
-  html += '<span style="font-weight:bold;font-size:14px;color:#1D3557;">' + (t.taskType || '(内容未選択)') + '</span>';
+  html += (t.pinned ? '<span style="margin-right:4px;">📌</span>' : '') + '<span style="font-weight:bold;font-size:14px;color:#1D3557;">' + (t.taskType || '(内容未選択)') + '</span>';
   if (t.workers && t.workers.length) html += '<div class="rowLine" style="font-size:13px;">👷 ' + arrLabel(t.workers) + '</div>';
   if (t.truck) html += '<div class="rowLine" style="font-size:13px;">🚚 ' + t.truck + '</div>';
   if (t.notes) html += '<div class="rowLine" style="font-size:13px;">📝 ' + t.notes + '</div>';
@@ -1250,6 +1377,22 @@ document.getElementById('taskTruckSuggest').classList.remove('show');
 document.addEventListener('click', (e) => {
 if (!e.target.closest('#taskTruckInput') && !e.target.closest('#taskTruckSuggest')) document.getElementById('taskTruckSuggest').classList.remove('show');
 });
+let selectedTaskPinned = false;
+let taskTemplateId = null;
+function renderTaskPinBtn() {
+const btn = document.getElementById('taskPinBtn');
+if (selectedTaskPinned) {
+  btn.style.background = '#1D3557'; btn.style.color = 'white'; btn.style.borderColor = '#1D3557';
+  btn.textContent = '📌 固定中(タップで解除)';
+} else {
+  btn.style.background = 'white'; btn.style.color = '#333'; btn.style.borderColor = '#ccc';
+  btn.textContent = '📌 固定にする(毎日自動で追加)';
+}
+}
+function toggleTaskPinned() {
+selectedTaskPinned = !selectedTaskPinned;
+renderTaskPinBtn();
+}
 function openAddTask() {
 document.getElementById('taskModalTitle').textContent = '業務を追加';
 document.getElementById('editTaskId').value = '';
@@ -1260,6 +1403,9 @@ fillTaskWorkersChecks([]);
 document.getElementById('taskWorkersChecks').style.display = 'none';
 taskTruckInput.value = '';
 document.getElementById('taskNotesInput').value = '';
+selectedTaskPinned = false;
+taskTemplateId = null;
+renderTaskPinBtn();
 document.getElementById('taskModal').classList.add('show');
 }
 function openEditTask(id) {
@@ -1274,29 +1420,57 @@ fillTaskWorkersChecks(t.workers || []);
 document.getElementById('taskWorkersChecks').style.display = 'none';
 taskTruckInput.value = t.truck || '';
 document.getElementById('taskNotesInput').value = t.notes || '';
+selectedTaskPinned = !!t.pinned;
+taskTemplateId = t.templateId || null;
+renderTaskPinBtn();
 document.getElementById('taskModal').classList.add('show');
 }
 function saveTask() {
 if (!selectedTaskType) { alert('内容を選択してください'); return; }
 const workers = Array.from(document.querySelectorAll('.taskWorkerCk:checked')).map(el => el.value);
-const data = {
-  date: currentDate,
-  taskType: selectedTaskType,
-  workers,
-  truck: taskTruckInput.value.trim(),
-  notes: document.getElementById('taskNotesInput').value.trim()
-};
+const truck = taskTruckInput.value.trim();
+const notes = document.getElementById('taskNotesInput').value.trim();
 const editId = document.getElementById('editTaskId').value;
-if (editId) {
-  db.collection('taskBoard').doc(editId).update(data)
-    .then(() => closeModal('taskModal'))
-    .catch(err => alert('保存に失敗しました: ' + err.message));
+
+function finalizeSaveTask(templateId) {
+  const data = {
+    date: currentDate,
+    taskType: selectedTaskType,
+    workers,
+    truck,
+    notes,
+    pinned: selectedTaskPinned,
+    templateId: templateId || null
+  };
+  if (editId) {
+    db.collection('taskBoard').doc(editId).update(data)
+      .then(() => closeModal('taskModal'))
+      .catch(err => alert('保存に失敗しました: ' + err.message));
+  } else {
+    data.createdAtMs = Date.now();
+    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    db.collection('taskBoard').add(data)
+      .then(() => closeModal('taskModal'))
+      .catch(err => alert('保存に失敗しました: ' + err.message));
+  }
+}
+
+if (selectedTaskPinned) {
+  const templateData = {taskType: selectedTaskType, workers, truck, notes};
+  if (taskTemplateId) {
+    db.collection('taskTemplates').doc(taskTemplateId).set(templateData, {merge: true})
+      .then(() => finalizeSaveTask(taskTemplateId))
+      .catch(err => alert('保存に失敗しました: ' + err.message));
+  } else {
+    db.collection('taskTemplates').add(templateData)
+      .then(docRef => finalizeSaveTask(docRef.id))
+      .catch(err => alert('保存に失敗しました: ' + err.message));
+  }
 } else {
-  data.createdAtMs = Date.now();
-  data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-  db.collection('taskBoard').add(data)
-    .then(() => closeModal('taskModal'))
-    .catch(err => alert('保存に失敗しました: ' + err.message));
+  if (taskTemplateId) {
+    db.collection('taskTemplates').doc(taskTemplateId).delete().catch(() => {});
+  }
+  finalizeSaveTask(null);
 }
 }
 function deleteTask() {
