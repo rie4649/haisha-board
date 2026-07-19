@@ -295,6 +295,9 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
     <button type="button" id="entryListTypeJomu" onclick="selectEntryListType('jomu')">常務</button>
   </div>
 
+  <label>回収日</label>
+  <input type="date" id="entryDateInput">
+
   <label>時間帯</label>
   <div class="timeTypeRow">
     <button type="button" id="timeBtnAm" onclick="selectTimeType('am')">午前</button>
@@ -309,6 +312,12 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div class="searchBoxWrap">
     <input type="text" id="companyInput" placeholder="会社名を入力(取引先一覧から候補が出ます)" autocomplete="off">
     <div class="searchSuggest" id="companySuggest"></div>
+  </div>
+
+  <label>電話依頼(電話で連絡があった場合)</label>
+  <div class="timeTypeRow">
+    <button type="button" id="entryPhoneReqNashi" onclick="selectPhoneRequest(false)">なし</button>
+    <button type="button" id="entryPhoneReqAri" onclick="selectPhoneRequest(true)">あり</button>
   </div>
 
   <label>電話番号</label>
@@ -333,8 +342,19 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
     <div class="searchSuggest" id="truckSuggest"></div>
   </div>
 
+  <label>回収物</label>
+  <div>
+    <button type="button" class="shuhinToggle" id="entryShuhinToggleBtn" onclick="toggleEntryShuhinPanel()">回収物を選択 ▾</button>
+    <div class="checkrow shuhinPanel" id="entryShuhinChecks"></div>
+  </div>
+
   <label>持ち物</label>
-  <textarea id="belongingsInput" placeholder="例:穴あきドラム3本、フレコン2枚"></textarea>
+  <div class="addRow"><span style="flex:1;">フレコン(枚)</span><input type="number" id="entryQtyFlecon" style="width:90px;" min="0"></div>
+  <div class="addRow"><span style="flex:1;">穴あきドラム(本)</span><input type="number" id="entryQtyAnaAki" style="width:90px;" min="0"></div>
+  <div class="addRow"><span style="flex:1;">穴なしドラム(本)</span><input type="number" id="entryQtyAnaNashi" style="width:90px;" min="0"></div>
+  <div class="addRow"><span style="flex:1;">箱(個)</span><input type="number" id="entryQtyBox" style="width:90px;" min="0"></div>
+  <label>持ち物(自由記入)</label>
+  <textarea id="belongingsInput" placeholder="例:その他特記事項"></textarea>
 
   <label>ETC使用</label>
   <div class="timeTypeRow">
@@ -349,6 +369,23 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
       <option value="7枚">7枚</option><option value="8枚">8枚</option><option value="9枚">9枚</option><option value="10枚">10枚</option>
     </select>
   </div>
+
+  <label>マニフェスト</label>
+  <div class="timeTypeRow">
+    <button type="button" id="entryManifestNashi" onclick="selectEntryManifest('なし')">なし</button>
+    <button type="button" id="entryManifestAri" onclick="selectEntryManifest('あり')">あり</button>
+  </div>
+  <div id="entryManifestDigitalWrap" style="display:none;">
+    <label class="inlineChk" style="display:flex;align-items:center;gap:6px;font-size:14px;margin-top:10px;">
+      <input type="checkbox" id="entryManifestDigitalInput"> 電子マニフェスト対応
+    </label>
+    <label>マニフェスト内容</label>
+    <button type="button" class="shuhinToggle" id="entryManifestTypeToggleBtn" onclick="toggleEntryManifestTypePanel()">マニフェスト内容を選択 ▾</button>
+    <div class="checkrow shuhinPanel" id="entryManifestTypeChecks"></div>
+  </div>
+
+  <label>備考</label>
+  <textarea id="entryNotesInput"></textarea>
 
   <div class="btnrow">
     <button class="secondary" onclick="closeModal('entryModal')">キャンセル</button>
@@ -565,6 +602,9 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <label>備考</label>
   <textarea id="clientNotesInput"></textarea>
 
+  <label>毎日の配車</label>
+  <button type="button" id="clientPinBtn" class="pillBtn" style="width:100%;padding:10px;" onclick="toggleClientPinned()">📌 固定にする(毎日自動で配車ボードに追加)</button>
+
   <div class="btnrow">
     <button class="secondary" onclick="closeModal('clientModal')">キャンセル</button>
     <button class="primary" onclick="saveClient()">保存</button>
@@ -671,12 +711,51 @@ db.collection('haishaClients').orderBy('name').onSnapshot(snapshot => {
 clients = [];
 snapshot.forEach(doc => clients.push({id: doc.id, ...doc.data()}));
 renderClientList();
+ensurePinnedEntriesForDate();
 });
 db.collection('haishaClientsJomu').orderBy('name').onSnapshot(snapshot => {
 clientsJomu = [];
 snapshot.forEach(doc => clientsJomu.push({id: doc.id, ...doc.data()}));
 renderClientList();
+ensurePinnedEntriesForDate();
 });
+function ensurePinnedEntriesForDate() {
+if (!currentDate) return;
+const pinnedNormal = clients.filter(c => c.pinned).map(c => ({c, listType: 'normal'}));
+const pinnedJomu = clientsJomu.filter(c => c.pinned).map(c => ({c, listType: 'jomu'}));
+const allPinned = pinnedNormal.concat(pinnedJomu);
+if (!allPinned.length) return;
+allPinned.forEach(({c, listType}) => {
+  const exists = boardEntries.some(e => e.companyId === c.id && (e.listType || 'normal') === listType);
+  if (exists) return;
+  const data = {
+    date: currentDate,
+    listType,
+    timeType: 'am',
+    customTime: '',
+    companyName: c.name,
+    companyId: c.id,
+    phoneRequest: false,
+    phone: c.contactPhone || '',
+    pickupPlace: c.address || '',
+    workers: [],
+    truck: '',
+    shuhinSelected: c.shuhinSelected || [],
+    items: c.items || {flecon: 0, anaAkiDrum: 0, anaNashiDrum: 0, box: 0},
+    belongings: '',
+    etcUse: c.etcUse || 'なし',
+    etcCount: c.etcCount || '',
+    manifestHas: c.manifestHas || 'なし',
+    manifestDigital: c.manifestDigital || false,
+    manifestTypeSelected: c.manifestTypeSelected || [],
+    notes: '',
+    status: 'pending',
+    createdAtMs: Date.now(),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  db.collection('haishaBoard').add(data).catch(err => console.error('固定予定の自動追加に失敗:', err));
+});
+}
 function subscribeList(docName, setter) {
 db.collection('pickupSettings').doc(docName).onSnapshot(doc => {
   setter((doc.exists && doc.data().names) ? doc.data().names : []);
@@ -741,6 +820,7 @@ boardUnsub = db.collection('haishaBoard').where('date', '==', currentDate).onSna
   snapshot.forEach(doc => boardEntries.push({id: doc.id, ...doc.data()}));
   boardEntries.sort((a,b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
   renderBoard();
+  ensurePinnedEntriesForDate();
 });
 if (boardAttendanceUnsub) boardAttendanceUnsub();
 boardAttendanceUnsub = db.collection('bentoDaily').doc(currentDate).onSnapshot(doc => {
@@ -785,6 +865,7 @@ const linked = !!e.companyId;
 const status = e.status || 'pending';
 let html = '<div class="card" onclick="openEditEntry(\'' + e.id + '\')">';
 html += '<div class="topRow">';
+if (e.phoneRequest) html += '<span class="badge" style="background:#ffe0e0;color:#c0392b;">☎️ 電話依頼</span>';
 if (e.phone) html += '<a class="phoneBtn" href="tel:' + e.phone + '" onclick="event.stopPropagation();">📞 ' + e.phone + '</a>';
 html += '<button class="statusBtn ' + status + '" onclick="event.stopPropagation();toggleStatus(\'' + e.id + '\')">' + (status === 'done' ? '回収済' : '未回収') + '</button>';
 html += timeBadgeHtml(e);
@@ -794,7 +875,12 @@ html += '<span class="companyName' + (linked ? ' linked' : '') + '" onclick="eve
 if (e.pickupPlace) html += '<div class="rowLine"><span class="ico">📍</span><span>' + e.pickupPlace + '</span></div>';
 if (e.workers && e.workers.length) html += '<div class="rowLine"><span class="ico">👷</span><span>' + arrLabel(e.workers) + '</span></div>';
 if (e.truck) html += '<div class="rowLine"><span class="ico">🚚</span><span>' + e.truck + '</span></div>';
-if (e.belongings) html += '<div class="rowLine"><span class="ico">📦</span><span>' + e.belongings + '</span></div>';
+if (e.shuhinSelected && e.shuhinSelected.length) html += '<div class="rowLine"><span class="ico">♻️</span><span>' + arrLabel(e.shuhinSelected) + '</span></div>';
+const itemsText = itemsLabelFor(e.items);
+if (itemsText && itemsText !== 'なし') html += '<div class="rowLine"><span class="ico">📦</span><span>' + itemsText + '</span></div>';
+if (e.belongings) html += '<div class="rowLine"><span class="ico">📝</span><span>' + e.belongings + '</span></div>';
+if (e.manifestHas === 'あり') html += '<div class="rowLine"><span class="ico">📋</span><span>マニフェストあり' + (e.manifestDigital ? '(電子対応)' : '') + (e.manifestTypeSelected && e.manifestTypeSelected.length ? '・' + e.manifestTypeSelected.join('・') : '') + '</span></div>';
+if (e.notes) html += '<div class="rowLine"><span class="ico">💬</span><span>' + e.notes + '</span></div>';
 html += '</div>';
 return html;
 }
@@ -822,35 +908,21 @@ const btnClass = state.offType === 'none' ? '' : 'off';
 const btnLabel = labels[state.offType];
 const safe = name.replace(/'/g,"\\'");
 const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
-const teamTagLabel = state.team ? teamLabels[state.team] : '班設定';
-const teamTagColor = state.team ? teamColors[state.team] : '#999';
+const workerTeam = (workerProfiles[name] && workerProfiles[name].team) || null;
+const teamTagLabel = workerTeam ? teamLabels[workerTeam] : '班未設定';
+const teamTagColor = workerTeam ? teamColors[workerTeam] : '#999';
 const partTag = state.part ? '<span style="background:#00897b;color:white;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;">バイト</span>' : '';
 return '<div class="attendBlock">' +
   '<div class="attendRow"><span>' +
-    '<button type="button" onclick="toggleTeamSelector(' + idx + ')" style="background:' + teamTagColor + ';color:white;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;border:none;">' + teamTagLabel + '</button>' +
+    '<span style="background:' + teamTagColor + ';color:white;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;">' + teamTagLabel + '</span>' +
     partTag + name + '</span>' +
   '<button class="miniOffBtn ' + btnClass + '" onclick="toggleOffSelector(' + idx + ')">' + btnLabel + '</button></div>' +
-  '<div class="offSelectorRow" id="teamSel_' + idx + '" style="display:none;">' +
-    ['A','B','free'].map(t =>
-      '<button type="button" class="' + (state.team === t ? 'active' : '') + '" onclick="assignWorkerTeamAndCollapse(\'' + safe + '\',\'' + t + '\',' + idx + ')">' + teamLabels[t] + '</button>'
-    ).join('') +
-  '</div>' +
   '<div class="offSelectorRow" id="offSel_' + idx + '" style="display:none;">' +
     ['none','am_off','pm_off','full_off'].map(key =>
       '<button type="button" class="' + (state.offType === key ? 'active' : '') + '" onclick="setWorkerOffTypeAndCollapse(\'' + safe + '\',\'' + key + '\',' + idx + ')">' + labels[key] + '</button>'
     ).join('') +
   '</div>' +
 '</div>';
-}
-function toggleTeamSelector(idx) {
-const el = document.getElementById('teamSel_' + idx);
-if (!el) return;
-el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
-}
-function assignWorkerTeamAndCollapse(name, team, idx) {
-assignWorkerTeam(name, team);
-const el = document.getElementById('teamSel_' + idx);
-if (el) el.style.display = 'none';
 }
 function toggleOffSelector(idx) {
 const el = document.getElementById('offSel_' + idx);
@@ -866,10 +938,11 @@ let attendanceTeamFilter = 'all';
 function matchesTeamFilter(name) {
 if (attendanceTeamFilter === 'all') return true;
 const state = boardAttendanceData[name] || {};
+const workerTeam = (workerProfiles[name] && workerProfiles[name].team) || null;
 if (attendanceTeamFilter === 'part') return !!state.part;
-if (attendanceTeamFilter === 'A') return state.team === 'A' || state.team === 'free' || !!state.part;
-if (attendanceTeamFilter === 'B') return state.team === 'B' || state.team === 'free' || !!state.part;
-return state.team === attendanceTeamFilter;
+if (attendanceTeamFilter === 'A') return workerTeam === 'A' || workerTeam === 'free' || !!state.part;
+if (attendanceTeamFilter === 'B') return workerTeam === 'B' || workerTeam === 'free' || !!state.part;
+return workerTeam === attendanceTeamFilter;
 }
 function setAttendanceTeamFilter(f) {
 attendanceTeamFilter = f;
@@ -905,7 +978,7 @@ const filteredPresentCount = filteredEntries.filter(o => {
 }).length;
 const filterLabel = attendanceTeamFilter === 'all' ? '全員' : attendanceTeamFilter === 'A' ? 'A班(+Free)' : attendanceTeamFilter === 'B' ? 'B班(+Free)' : attendanceTeamFilter === 'part' ? 'バイト' : 'Free';
 workingBox.innerHTML = '<div style="font-size:13px;color:#555;margin-bottom:6px;">' + filterLabel + ' 出勤:' + filteredPresentCount + '名 / 該当:' + filteredEntries.length + '名</div>' +
-  (filteredEntries.length ? filteredEntries.map(o => attendanceBlockHtml(o.name, o.idx)).join('') : '<div style="color:#999;font-size:13px;">該当者がいません</div>');
+  (filteredEntries.length ? filteredEntries.map(o => attendanceBlockHtml(o.name, o.idx)).join('') : '<div style="color:#999;font-size:13px;">該当者がいません' + (attendanceTeamFilter !== 'all' ? '(「全員」タブで班を設定してください)' : '') + '</div>');
 if (!fullOff.length && !amOff.length && !pmOff.length) {
   offBox.innerHTML = '<div style="color:#999;font-size:13px;">' + (attendanceTeamFilter === 'all' ? '本日休みの人はいません' : filterLabel + 'に休みの人はいません') + '</div>';
 } else {
@@ -1325,6 +1398,37 @@ let selectedTimeType = 'am';
 let selectedCompanyId = null;
 let selectedEtc = 'なし';
 let selectedEntryListType = 'normal';
+let selectedPhoneRequest = false;
+let selectedEntryManifest = 'なし';
+function selectPhoneRequest(v) {
+selectedPhoneRequest = v;
+document.getElementById('entryPhoneReqNashi').classList.toggle('active', !v);
+document.getElementById('entryPhoneReqAri').classList.toggle('active', v);
+}
+function selectEntryManifest(v) {
+selectedEntryManifest = v;
+document.getElementById('entryManifestNashi').classList.toggle('active', v === 'なし');
+document.getElementById('entryManifestAri').classList.toggle('active', v === 'あり');
+document.getElementById('entryManifestDigitalWrap').style.display = (v === 'あり') ? 'block' : 'none';
+}
+function fillEntryShuhinChecks(selected) {
+const el = document.getElementById('entryShuhinChecks');
+if (!shuhinOptions.length) { el.innerHTML = '<span style="color:#999;font-size:13px;">回収物一覧が未登録です</span>'; return; }
+el.innerHTML = shuhinOptions.map(name => '<label><input type="checkbox" class="entryShuhinCk" value="' + name + '" ' + (selected.includes(name) ? 'checked' : '') + '> ' + name + '</label>').join('');
+}
+function toggleEntryShuhinPanel() {
+const panel = document.getElementById('entryShuhinChecks');
+panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'flex' : 'none';
+}
+function fillEntryManifestTypeChecks(selected) {
+const el = document.getElementById('entryManifestTypeChecks');
+if (!manifestTypeList.length) { el.innerHTML = '<span style="color:#999;font-size:13px;">マニフェスト内容一覧が未登録です</span>'; return; }
+el.innerHTML = manifestTypeList.map(name => '<label><input type="checkbox" class="entryManifestTypeCk" value="' + name + '" ' + (selected.includes(name) ? 'checked' : '') + '> ' + name + '</label>').join('');
+}
+function toggleEntryManifestTypePanel() {
+const panel = document.getElementById('entryManifestTypeChecks');
+panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'flex' : 'none';
+}
 
 function selectEntryListType(t) {
 selectedEntryListType = t;
@@ -1353,17 +1457,29 @@ document.getElementById('editEntryId').value = '';
 document.getElementById('deleteEntryRow').style.display = 'none';
 document.getElementById('entryReminderRow').style.display = 'none';
 selectEntryListType(listType || 'normal');
+document.getElementById('entryDateInput').value = currentDate;
 selectedTimeType = 'am';
 selectTimeType('am');
 document.getElementById('customTimeInput').value = '';
 document.getElementById('companyInput').value = '';
 selectedCompanyId = null;
+selectPhoneRequest(false);
 document.getElementById('phoneInput').value = '';
 document.getElementById('pickupPlaceInput').value = '';
 document.getElementById('truckInput').value = '';
+fillEntryShuhinChecks([]);
+document.getElementById('entryShuhinChecks').style.display = 'none';
+document.getElementById('entryQtyFlecon').value = '';
+document.getElementById('entryQtyAnaAki').value = '';
+document.getElementById('entryQtyAnaNashi').value = '';
+document.getElementById('entryQtyBox').value = '';
 document.getElementById('belongingsInput').value = '';
 selectEtc('なし');
 document.getElementById('etcCountInput').value = '1枚';
+selectEntryManifest('なし');
+document.getElementById('entryManifestDigitalInput').checked = false;
+fillEntryManifestTypeChecks([]);
+document.getElementById('entryNotesInput').value = '';
 fillWorkersChecks([]);
 document.getElementById('workersChecks').style.display = 'none';
 document.getElementById('entryModal').classList.add('show');
@@ -1377,17 +1493,30 @@ document.getElementById('editEntryId').value = e.id;
 document.getElementById('deleteEntryRow').style.display = 'flex';
 document.getElementById('entryReminderRow').style.display = 'flex';
 selectEntryListType(e.listType || 'normal');
+document.getElementById('entryDateInput').value = e.date || currentDate;
 selectedTimeType = e.timeType || 'am';
 selectTimeType(selectedTimeType);
 document.getElementById('customTimeInput').value = e.customTime || '';
 document.getElementById('companyInput').value = e.companyName || '';
 selectedCompanyId = e.companyId || null;
+selectPhoneRequest(!!e.phoneRequest);
 document.getElementById('phoneInput').value = e.phone || '';
 document.getElementById('pickupPlaceInput').value = e.pickupPlace || '';
 document.getElementById('truckInput').value = e.truck || '';
+fillEntryShuhinChecks(e.shuhinSelected || []);
+document.getElementById('entryShuhinChecks').style.display = 'none';
+const items = e.items || {};
+document.getElementById('entryQtyFlecon').value = items.flecon || '';
+document.getElementById('entryQtyAnaAki').value = items.anaAkiDrum || '';
+document.getElementById('entryQtyAnaNashi').value = items.anaNashiDrum || '';
+document.getElementById('entryQtyBox').value = items.box || '';
 document.getElementById('belongingsInput').value = e.belongings || '';
 selectEtc(e.etcUse === 'あり' ? 'あり' : 'なし');
 document.getElementById('etcCountInput').value = e.etcCount || '1枚';
+selectEntryManifest(e.manifestHas === 'あり' ? 'あり' : 'なし');
+document.getElementById('entryManifestDigitalInput').checked = !!e.manifestDigital;
+fillEntryManifestTypeChecks(e.manifestTypeSelected || []);
+document.getElementById('entryNotesInput').value = e.notes || '';
 fillWorkersChecks(e.workers || []);
 document.getElementById('workersChecks').style.display = 'none';
 document.getElementById('entryModal').classList.add('show');
@@ -1462,10 +1591,16 @@ if (c.etcUse === 'あり') {
   selectEtc('あり');
   document.getElementById('etcCountInput').value = c.etcCount || '1枚';
 }
-const belongingsField = document.getElementById('belongingsInput');
-if (!belongingsField.value.trim()) {
-  const itemsText = itemsLabelFor(c.items);
-  if (itemsText && itemsText !== 'なし') belongingsField.value = itemsText;
+fillEntryShuhinChecks(c.shuhinSelected || []);
+const items = c.items || {};
+if (!document.getElementById('entryQtyFlecon').value) document.getElementById('entryQtyFlecon').value = items.flecon || '';
+if (!document.getElementById('entryQtyAnaAki').value) document.getElementById('entryQtyAnaAki').value = items.anaAkiDrum || '';
+if (!document.getElementById('entryQtyAnaNashi').value) document.getElementById('entryQtyAnaNashi').value = items.anaNashiDrum || '';
+if (!document.getElementById('entryQtyBox').value) document.getElementById('entryQtyBox').value = items.box || '';
+if (c.manifestHas === 'あり') {
+  selectEntryManifest('あり');
+  document.getElementById('entryManifestDigitalInput').checked = !!c.manifestDigital;
+  fillEntryManifestTypeChecks(c.manifestTypeSelected || []);
 }
 }
 
@@ -1493,21 +1628,34 @@ if (selectedTimeType === 'custom' && !document.getElementById('customTimeInput')
   alert('時間を入力してください');
   return;
 }
+const entryDate = document.getElementById('entryDateInput').value || currentDate;
 const workers = Array.from(document.querySelectorAll('.workerCk:checked')).map(el => el.value);
 const data = {
-  date: currentDate,
+  date: entryDate,
   listType: selectedEntryListType,
   timeType: selectedTimeType,
   customTime: selectedTimeType === 'custom' ? document.getElementById('customTimeInput').value : '',
   companyName,
   companyId: selectedCompanyId,
+  phoneRequest: selectedPhoneRequest,
   phone: document.getElementById('phoneInput').value.trim(),
   pickupPlace: document.getElementById('pickupPlaceInput').value.trim(),
   workers,
   truck: truckInput.value.trim(),
+  shuhinSelected: Array.from(document.querySelectorAll('.entryShuhinCk:checked')).map(el => el.value),
+  items: {
+    flecon: parseInt(document.getElementById('entryQtyFlecon').value) || 0,
+    anaAkiDrum: parseInt(document.getElementById('entryQtyAnaAki').value) || 0,
+    anaNashiDrum: parseInt(document.getElementById('entryQtyAnaNashi').value) || 0,
+    box: parseInt(document.getElementById('entryQtyBox').value) || 0
+  },
   belongings: document.getElementById('belongingsInput').value.trim(),
   etcUse: selectedEtc,
-  etcCount: selectedEtc === 'あり' ? document.getElementById('etcCountInput').value : ''
+  etcCount: selectedEtc === 'あり' ? document.getElementById('etcCountInput').value : '',
+  manifestHas: selectedEntryManifest,
+  manifestDigital: selectedEntryManifest === 'あり' ? document.getElementById('entryManifestDigitalInput').checked : false,
+  manifestTypeSelected: selectedEntryManifest === 'あり' ? Array.from(document.querySelectorAll('.entryManifestTypeCk:checked')).map(el => el.value) : [],
+  notes: document.getElementById('entryNotesInput').value.trim()
 };
 
 function finalizeSaveEntry() {
@@ -1801,7 +1949,7 @@ if (!list.length) { div.innerHTML = '<div class="empty">取引先がまだ登録
 if (!filtered.length) { div.innerHTML = '<div class="empty">該当する取引先が見つかりません</div>'; return; }
 div.innerHTML = filtered.map(c => {
   return '<div class="card" onclick="openEditClient(\'' + c.id + '\')">' +
-    '<h2 style="margin:0;font-size:17px;color:#1D3557;">' + c.name + '</h2>' +
+    '<h2 style="margin:0;font-size:17px;color:#1D3557;">' + (c.pinned ? '📌 ' : '') + c.name + '</h2>' +
     (c.address ? '<div style="color:#666;font-size:13px;margin-top:4px;">' + c.address + '</div>' : '') +
     (c.contactName ? '<div style="color:#666;font-size:13px;">担当:' + c.contactName + (c.contactPhone ? '(' + c.contactPhone + ')' : '') + '</div>' : '') +
   '</div>';
@@ -1861,6 +2009,25 @@ document.getElementById('clientEtcNashi').classList.toggle('active', v === 'な�
 document.getElementById('clientEtcAri').classList.toggle('active', v === 'あり');
 document.getElementById('clientEtcCountWrap').style.display = (v === 'あり') ? 'block' : 'none';
 }
+let selectedClientPinned = false;
+function toggleClientPinned() {
+selectedClientPinned = !selectedClientPinned;
+renderClientPinBtn();
+}
+function renderClientPinBtn() {
+const btn = document.getElementById('clientPinBtn');
+if (selectedClientPinned) {
+  btn.style.background = '#1D3557';
+  btn.style.color = 'white';
+  btn.style.borderColor = '#1D3557';
+  btn.textContent = '📌 固定中(タップで解除)';
+} else {
+  btn.style.background = 'white';
+  btn.style.color = '#333';
+  btn.style.borderColor = '#ccc';
+  btn.textContent = '📌 固定にする(毎日自動で配車ボードに追加)';
+}
+}
 function openAddClient() {
 document.getElementById('clientModalTitle').textContent = '取引先を追加(' + (clientListMode === 'jomu' ? '常務' : '通常') + ')';
 document.getElementById('editClientId').value = '';
@@ -1882,6 +2049,8 @@ selectClientManifest('なし');
 document.getElementById('clientManifestDigitalInput').checked = false;
 fillClientManifestTypeChecks([]);
 document.getElementById('clientNotesInput').value = '';
+selectedClientPinned = false;
+renderClientPinBtn();
 document.getElementById('clientModal').classList.add('show');
 }
 function openEditClient(id) {
@@ -1909,6 +2078,8 @@ selectClientManifest(c.manifestHas === 'あり' ? 'あり' : 'なし');
 document.getElementById('clientManifestDigitalInput').checked = !!c.manifestDigital;
 fillClientManifestTypeChecks(c.manifestTypeSelected || []);
 document.getElementById('clientNotesInput').value = c.notes || '';
+selectedClientPinned = !!c.pinned;
+renderClientPinBtn();
 document.getElementById('clientModal').classList.add('show');
 }
 function saveClient() {
@@ -1933,6 +2104,7 @@ const data = {
   manifestDigital: selectedClientManifest === 'あり' ? document.getElementById('clientManifestDigitalInput').checked : false,
   manifestTypeSelected: selectedClientManifest === 'あり' ? Array.from(document.querySelectorAll('.clientManifestTypeCk:checked')).map(el => el.value) : [],
   notes: document.getElementById('clientNotesInput').value.trim(),
+  pinned: selectedClientPinned,
   updatedAt: firebase.firestore.FieldValue.serverTimestamp()
 };
 const collectionName = clientListMode === 'jomu' ? 'haishaClientsJomu' : 'haishaClients';
@@ -2073,9 +2245,14 @@ if (!collectorList.length) {
   return;
 }
 const bentoLabels = {rice: 'お弁当', side: 'おかずのみ', noodle: '麺', shellfish_no: '甲殻類不可', none: '不要'};
+const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
+const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
 wDiv.innerHTML = collectorList.map((name, i) => {
   const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
   const safe = name.replace(/'/g,"\\'");
+  const teamBtns = ['A','B','free'].map(t =>
+    '<button type="button" class="pillBtn" style="' + (profile.team === t ? 'background:' + teamColors[t] + ';color:white;border-color:' + teamColors[t] + ';' : '') + '" onclick="updateWorkerTeam(\'' + safe + '\',\'' + t + '\')">' + teamLabels[t] + '</button>'
+  ).join('');
   const btns = ['rice','side','noodle','shellfish_no','none'].map(key =>
     '<button type="button" class="pillBtn ' + (profile.bentoType === key ? 'active' : '') + '" onclick="updateWorkerBentoType(\'' + safe + '\',\'' + key + '\')">' + bentoLabels[key] + '</button>'
   ).join('');
@@ -2085,6 +2262,8 @@ wDiv.innerHTML = collectorList.map((name, i) => {
   return '<div class="settingsRow">' +
     moveBtns +
     '<span class="rName" style="flex:0 0 auto;">' + name + '</span>' +
+    teamBtns +
+    '<span class="pillDivider"></span>' +
     btns +
     '<button class="delX" onclick="removeWorkerSetting(\'' + safe + '\')">削除</button>' +
     '</div>';
@@ -2101,10 +2280,10 @@ function updateWorkerProfileField(name, field, value) {
 db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: {[name]: {[field]: value}}}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function updateWorkerBentoType(name, bentoType) { updateWorkerProfileField(name, 'bentoType', bentoType); }
-function assignWorkerTeam(name, team) {
-const existing = boardAttendanceData[name] || {};
+function updateWorkerTeam(name, team) {
+const existing = workerProfiles[name] || {};
 const newTeam = existing.team === team ? null : team;
-db.collection('bentoDaily').doc(currentDate).set({entries: {[name]: {offType: 'none', team: newTeam}}}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
+updateWorkerProfileField(name, 'team', newTeam);
 }
 function toggleWorkerPart(name) {
 const existing = boardAttendanceData[name] || {};
