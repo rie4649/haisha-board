@@ -1017,11 +1017,12 @@ db.collection('haishaBoard').doc(entryId).update({status: newStatus});
 
 // ---- 出勤者/休み/お弁当 サイドボックス ----
 function attendanceBlockHtml(name, idx) {
-const state = boardAttendanceData[name] || {offType: 'none'};
+const state = boardAttendanceData[name] || {};
+const offType = state.offType || 'none';
 const labels = {none: '出勤', am_off: '午前休み', pm_off: '午後休み', full_off: '1日休み'};
 const teamLabels = {A: 'A班', B: 'B班', free: 'Free'};
-const btnClass = state.offType === 'none' ? '' : 'off';
-const btnLabel = labels[state.offType];
+const btnClass = offType === 'none' ? '' : 'off';
+const btnLabel = labels[offType];
 const safe = name.replace(/'/g,"\\'");
 const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
 const workerTeam = (workerProfiles[name] && workerProfiles[name].team) || null;
@@ -1035,7 +1036,7 @@ return '<div class="attendBlock">' +
   '<button class="miniOffBtn ' + btnClass + '" onclick="toggleOffSelector(' + idx + ')">' + btnLabel + '</button></div>' +
   '<div class="offSelectorRow" id="offSel_' + idx + '" style="display:none;">' +
     ['none','am_off','pm_off','full_off'].map(key =>
-      '<button type="button" class="' + (state.offType === key ? 'active' : '') + '" onclick="setWorkerOffTypeAndCollapse(\'' + safe + '\',\'' + key + '\',' + idx + ')">' + labels[key] + '</button>'
+      '<button type="button" class="' + (offType === key ? 'active' : '') + '" onclick="setWorkerOffTypeAndCollapse(\'' + safe + '\',\'' + key + '\',' + idx + ')">' + labels[key] + '</button>'
     ).join('') +
   '</div>' +
 '</div>';
@@ -1117,8 +1118,8 @@ const noodleNames = [];
 const sideNames = [];
 collectorList.forEach(name => {
   if (!matchesTeamFilter(name)) return;
-  const state = boardAttendanceData[name] || {offType: 'none'};
-  if (state.offType !== 'none') return;
+  const state = boardAttendanceData[name] || {};
+  if ((state.offType || 'none') !== 'none') return;
   const profile = workerProfiles[name];
   if (profile && profile.bentoType === 'none') return;
   total++;
@@ -1702,6 +1703,7 @@ selectTimeType('am');
 document.getElementById('customTimeInput').value = '';
 document.getElementById('companyInput').value = '';
 selectedCompanyId = null;
+renderEntryPinRow();
 setEntryMarks({});
 document.getElementById('departmentInput').value = '';
 document.getElementById('contactPersonInput').value = '';
@@ -2588,7 +2590,7 @@ const el = document.getElementById('partTimeChecks');
 if (!collectorList.length) { el.innerHTML = '<span style="color:#999;font-size:13px;">作業員一覧が未登録です</span>'; document.getElementById('partTimeModal').classList.add('show'); return; }
 el.innerHTML = collectorList.map(name => {
   const isPart = !!(boardAttendanceData[name] && boardAttendanceData[name].part);
-  const team = (boardAttendanceData[name] && boardAttendanceData[name].team) || null;
+  const team = (workerProfiles[name] && workerProfiles[name].team) || null;
   const teamLabelsShort = {A: '(A班)', B: '(B班)', free: '(Free)'};
   return '<label><input type="checkbox" class="partTimeCk" value="' + name + '" ' + (isPart ? 'checked' : '') + '> ' + name + (team ? teamLabelsShort[team] : '') + '</label>';
 }).join('');
