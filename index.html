@@ -745,6 +745,7 @@ snapshot.forEach(doc => clientsJomu.push({id: doc.id, ...doc.data()}));
 renderClientList();
 ensurePinnedEntriesForDate();
 });
+let pendingClientEntryCreations = new Set();
 function ensurePinnedEntriesForDate() {
 if (!currentDate) return;
 const pinnedNormal = clients.filter(c => c.pinned).map(c => ({c, listType: 'normal'}));
@@ -752,8 +753,11 @@ const pinnedJomu = clientsJomu.filter(c => c.pinned).map(c => ({c, listType: 'jo
 const allPinned = pinnedNormal.concat(pinnedJomu);
 if (!allPinned.length) return;
 allPinned.forEach(({c, listType}) => {
+  const lockKey = c.id + '_' + listType;
+  if (pendingClientEntryCreations.has(lockKey)) return;
   const exists = boardEntries.some(e => e.companyId === c.id && (e.listType || 'normal') === listType);
   if (exists) return;
+  pendingClientEntryCreations.add(lockKey);
   const data = {
     date: currentDate,
     listType,
@@ -817,11 +821,14 @@ shukkaTemplates = [];
 snapshot.forEach(doc => shukkaTemplates.push({id: doc.id, ...doc.data()}));
 ensurePinnedShukkaForDate();
 });
+let pendingShukkaCreations = new Set();
 function ensurePinnedShukkaForDate() {
 if (!currentDate || !shukkaTemplates.length) return;
 shukkaTemplates.forEach(t => {
+  if (pendingShukkaCreations.has(t.id)) return;
   const exists = shukkaEntries.some(e => e.templateId === t.id);
   if (exists) return;
+  pendingShukkaCreations.add(t.id);
   const data = {
     date: currentDate,
     companyName: t.companyName,
@@ -843,11 +850,14 @@ taskTemplates = [];
 snapshot.forEach(doc => taskTemplates.push({id: doc.id, ...doc.data()}));
 ensurePinnedTasksForDate();
 });
+let pendingTaskCreations = new Set();
 function ensurePinnedTasksForDate() {
 if (!currentDate || !taskTemplates.length) return;
 taskTemplates.forEach(t => {
+  if (pendingTaskCreations.has(t.id)) return;
   const exists = taskEntries.some(e => e.templateId === t.id);
   if (exists) return;
+  pendingTaskCreations.add(t.id);
   const data = {
     date: currentDate,
     taskType: t.taskType,
@@ -891,6 +901,9 @@ function goToday() { currentDate = todayStr(); datePicker.value = currentDate; l
 
 function loadDate() {
 document.getElementById('bigDateLabel').textContent = formatBigDate(currentDate);
+pendingClientEntryCreations.clear();
+pendingShukkaCreations.clear();
+pendingTaskCreations.clear();
 if (boardUnsub) boardUnsub();
 boardUnsub = db.collection('haishaBoard').where('date', '==', currentDate).onSnapshot(snapshot => {
   boardEntries = [];
@@ -1315,9 +1328,14 @@ if (selectedShukkaPinned) {
 function deleteShukka() {
 const editId = document.getElementById('editShukkaId').value;
 if (!editId) return;
-if (!confirm('この出荷予定を削除しますか?')) return;
+const msg = shukkaTemplateId ? 'この出荷予定を削除しますか?(固定も解除され、毎日の自動追加は止まります)' : 'この出荷予定を削除しますか?';
+if (!confirm(msg)) return;
+const tId = shukkaTemplateId;
 db.collection('shukkaBoard').doc(editId).delete()
-  .then(() => closeModal('shukkaModal'))
+  .then(() => {
+    if (tId) db.collection('shukkaTemplates').doc(tId).delete().catch(() => {});
+    closeModal('shukkaModal');
+  })
   .catch(err => alert('削除に失敗しました: ' + err.message));
 }
 
@@ -1476,9 +1494,14 @@ if (selectedTaskPinned) {
 function deleteTask() {
 const editId = document.getElementById('editTaskId').value;
 if (!editId) return;
-if (!confirm('この業務を削除しますか?')) return;
+const msg = taskTemplateId ? 'この業務を削除しますか?(固定も解除され、毎日の自動追加は止まります)' : 'この業務を削除しますか?';
+if (!confirm(msg)) return;
+const tId = taskTemplateId;
 db.collection('taskBoard').doc(editId).delete()
-  .then(() => closeModal('taskModal'))
+  .then(() => {
+    if (tId) db.collection('taskTemplates').doc(tId).delete().catch(() => {});
+    closeModal('taskModal');
+  })
   .catch(err => alert('削除に失敗しました: ' + err.message));
 }
 
@@ -1943,9 +1966,23 @@ if (!data.companyId) {
 function deleteEntry() {
 const editId = document.getElementById('editEntryId').value;
 if (!editId) return;
-if (!confirm('この予定を削除しますか?')) return;
+const e = boardEntries.find(x => x.id === editId);
+let pinnedClient = null;
+if (e && e.companyId) {
+  const source = (e.listType || 'normal') === 'jomu' ? clientsJomu : clients;
+  const c = source.find(x => x.id === e.companyId);
+  if (c && c.pinned) pinnedClient = c;
+}
+const msg = pinnedClient ? 'この予定を削除しますか?(この取引先の固定も解除され、毎日の自動追加は止まります)' : 'この予定を削除しますか?';
+if (!confirm(msg)) return;
 db.collection('haishaBoard').doc(editId).delete()
-  .then(() => closeModal('entryModal'))
+  .then(() => {
+    if (pinnedClient) {
+      const collectionName = (e.listType || 'normal') === 'jomu' ? 'haishaClientsJomu' : 'haishaClients';
+      db.collection(collectionName).doc(pinnedClient.id).update({pinned: false}).catch(() => {});
+    }
+    closeModal('entryModal');
+  })
   .catch(err => alert('削除に失敗しました: ' + err.message));
 }
 function pad2(n) { return String(n).padStart(2, '0'); }
