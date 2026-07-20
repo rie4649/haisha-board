@@ -757,43 +757,43 @@ ensurePinnedEntriesForDate();
 let pendingClientEntryCreations = new Set();
 function ensurePinnedEntriesForDate() {
 if (!currentDate) return;
-if (!clientsLoaded || !clientsJomuLoaded || !boardEntriesLoaded) return;
+if (!clientsLoaded || !clientsJomuLoaded) return;
 const pinnedNormal = clients.filter(c => c.pinned).map(c => ({c, listType: 'normal'}));
 const pinnedJomu = clientsJomu.filter(c => c.pinned).map(c => ({c, listType: 'jomu'}));
 const allPinned = pinnedNormal.concat(pinnedJomu);
 if (!allPinned.length) return;
 allPinned.forEach(({c, listType}) => {
-  const lockKey = c.id + '_' + listType;
-  if (pendingClientEntryCreations.has(lockKey)) return;
-  const exists = boardEntries.some(e => e.companyId === c.id && (e.listType || 'normal') === listType);
-  if (exists) return;
-  pendingClientEntryCreations.add(lockKey);
-  const data = {
-    date: currentDate,
-    listType,
-    timeType: 'am',
-    customTime: '',
-    companyName: c.name,
-    companyId: c.id,
-    phoneRequest: false,
-    phone: c.contactPhone || '',
-    pickupPlace: c.address || '',
-    workers: [],
-    truck: '',
-    shuhinSelected: c.shuhinSelected || [],
-    items: c.items || {flecon: 0, anaAkiDrum: 0, anaNashiDrum: 0, box: 0},
-    belongings: '',
-    etcUse: c.etcUse || 'なし',
-    etcCount: c.etcCount || '',
-    manifestHas: c.manifestHas || 'なし',
-    manifestDigital: c.manifestDigital || false,
-    manifestTypeSelected: c.manifestTypeSelected || [],
-    notes: '',
-    status: 'pending',
-    createdAtMs: Date.now(),
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  db.collection('haishaBoard').add(data).catch(err => console.error('固定予定の自動追加に失敗:', err));
+  const docId = 'pinned_' + c.id + '_' + listType + '_' + currentDate;
+  const docRef = db.collection('haishaBoard').doc(docId);
+  docRef.get().then(docSnap => {
+    if (docSnap.exists) return;
+    const data = {
+      date: currentDate,
+      listType,
+      timeType: 'am',
+      customTime: '',
+      companyName: c.name,
+      companyId: c.id,
+      phoneRequest: false,
+      phone: c.contactPhone || '',
+      pickupPlace: c.address || '',
+      workers: [],
+      truck: '',
+      shuhinSelected: c.shuhinSelected || [],
+      items: c.items || {flecon: 0, anaAkiDrum: 0, anaNashiDrum: 0, box: 0},
+      belongings: '',
+      etcUse: c.etcUse || 'なし',
+      etcCount: c.etcCount || '',
+      manifestHas: c.manifestHas || 'なし',
+      manifestDigital: c.manifestDigital || false,
+      manifestTypeSelected: c.manifestTypeSelected || [],
+      notes: '',
+      status: 'pending',
+      createdAtMs: Date.now(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    docRef.set(data).catch(err => console.error('固定予定の自動追加に失敗:', err));
+  }).catch(err => console.error('固定予定の確認に失敗:', err));
 });
 }
 function subscribeList(docName, setter) {
@@ -835,26 +835,26 @@ ensurePinnedShukkaForDate();
 let pendingShukkaCreations = new Set();
 function ensurePinnedShukkaForDate() {
 if (!currentDate || !shukkaTemplates.length) return;
-if (!shukkaTemplatesLoaded || !shukkaEntriesLoaded) return;
 shukkaTemplates.forEach(t => {
-  if (pendingShukkaCreations.has(t.id)) return;
-  const exists = shukkaEntries.some(e => e.templateId === t.id);
-  if (exists) return;
-  pendingShukkaCreations.add(t.id);
-  const data = {
-    date: currentDate,
-    companyName: t.companyName,
-    shippedItem: t.shippedItem || '',
-    workers: t.workers || [],
-    truck: t.truck || '',
-    fastFlag: t.fastFlag || false,
-    pinned: true,
-    templateId: t.id,
-    status: 'pending',
-    createdAtMs: Date.now(),
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  db.collection('shukkaBoard').add(data).catch(err => console.error('固定出荷の自動追加に失敗:', err));
+  const docId = 'pinned_' + t.id + '_' + currentDate;
+  const docRef = db.collection('shukkaBoard').doc(docId);
+  docRef.get().then(docSnap => {
+    if (docSnap.exists) return;
+    const data = {
+      date: currentDate,
+      companyName: t.companyName,
+      shippedItem: t.shippedItem || '',
+      workers: t.workers || [],
+      truck: t.truck || '',
+      fastFlag: t.fastFlag || false,
+      pinned: true,
+      templateId: t.id,
+      status: 'pending',
+      createdAtMs: Date.now(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    docRef.set(data).catch(err => console.error('固定出荷の自動追加に失敗:', err));
+  }).catch(err => console.error('固定出荷の確認に失敗:', err));
 });
 }
 db.collection('taskTemplates').onSnapshot(snapshot => {
@@ -866,24 +866,24 @@ ensurePinnedTasksForDate();
 let pendingTaskCreations = new Set();
 function ensurePinnedTasksForDate() {
 if (!currentDate || !taskTemplates.length) return;
-if (!taskTemplatesLoaded || !taskEntriesLoaded) return;
 taskTemplates.forEach(t => {
-  if (pendingTaskCreations.has(t.id)) return;
-  const exists = taskEntries.some(e => e.templateId === t.id);
-  if (exists) return;
-  pendingTaskCreations.add(t.id);
-  const data = {
-    date: currentDate,
-    taskType: t.taskType,
-    workers: t.workers || [],
-    truck: t.truck || '',
-    notes: t.notes || '',
-    pinned: true,
-    templateId: t.id,
-    createdAtMs: Date.now(),
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  db.collection('taskBoard').add(data).catch(err => console.error('固定業務の自動追加に失敗:', err));
+  const docId = 'pinned_' + t.id + '_' + currentDate;
+  const docRef = db.collection('taskBoard').doc(docId);
+  docRef.get().then(docSnap => {
+    if (docSnap.exists) return;
+    const data = {
+      date: currentDate,
+      taskType: t.taskType,
+      workers: t.workers || [],
+      truck: t.truck || '',
+      notes: t.notes || '',
+      pinned: true,
+      templateId: t.id,
+      createdAtMs: Date.now(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    docRef.set(data).catch(err => console.error('固定業務の自動追加に失敗:', err));
+  }).catch(err => console.error('固定業務の確認に失敗:', err));
 });
 }
 
