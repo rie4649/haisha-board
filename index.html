@@ -669,6 +669,8 @@ window.addEventListener('appinstalled', () => { installBtn.style.display = 'none
 
 let clients = [];
 let clientsJomu = [];
+let clientsLoaded = false;
+let clientsJomuLoaded = false;
 let clientListMode = 'normal';
 let truckList = [];
 let collectorList = [];
@@ -680,9 +682,14 @@ let taskTypes = [];
 let taskEntries = [];
 let shukkaTemplates = [];
 let taskTemplates = [];
+let shukkaTemplatesLoaded = false;
+let taskTemplatesLoaded = false;
 let workerProfiles = {};
 let boardEntries = [];
 let shukkaEntries = [];
+let boardEntriesLoaded = false;
+let shukkaEntriesLoaded = false;
+let taskEntriesLoaded = false;
 let currentDate = todayStr();
 let boardAttendanceData = {};
 let boardUnsub = null;
@@ -736,18 +743,21 @@ if (tab === 'settings') renderSettingsLists();
 db.collection('haishaClients').orderBy('name').onSnapshot(snapshot => {
 clients = [];
 snapshot.forEach(doc => clients.push({id: doc.id, ...doc.data()}));
+clientsLoaded = true;
 renderClientList();
 ensurePinnedEntriesForDate();
 });
 db.collection('haishaClientsJomu').orderBy('name').onSnapshot(snapshot => {
 clientsJomu = [];
 snapshot.forEach(doc => clientsJomu.push({id: doc.id, ...doc.data()}));
+clientsJomuLoaded = true;
 renderClientList();
 ensurePinnedEntriesForDate();
 });
 let pendingClientEntryCreations = new Set();
 function ensurePinnedEntriesForDate() {
 if (!currentDate) return;
+if (!clientsLoaded || !clientsJomuLoaded || !boardEntriesLoaded) return;
 const pinnedNormal = clients.filter(c => c.pinned).map(c => ({c, listType: 'normal'}));
 const pinnedJomu = clientsJomu.filter(c => c.pinned).map(c => ({c, listType: 'jomu'}));
 const allPinned = pinnedNormal.concat(pinnedJomu);
@@ -819,11 +829,13 @@ db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: update
 db.collection('shukkaTemplates').onSnapshot(snapshot => {
 shukkaTemplates = [];
 snapshot.forEach(doc => shukkaTemplates.push({id: doc.id, ...doc.data()}));
+shukkaTemplatesLoaded = true;
 ensurePinnedShukkaForDate();
 });
 let pendingShukkaCreations = new Set();
 function ensurePinnedShukkaForDate() {
 if (!currentDate || !shukkaTemplates.length) return;
+if (!shukkaTemplatesLoaded || !shukkaEntriesLoaded) return;
 shukkaTemplates.forEach(t => {
   if (pendingShukkaCreations.has(t.id)) return;
   const exists = shukkaEntries.some(e => e.templateId === t.id);
@@ -848,11 +860,13 @@ shukkaTemplates.forEach(t => {
 db.collection('taskTemplates').onSnapshot(snapshot => {
 taskTemplates = [];
 snapshot.forEach(doc => taskTemplates.push({id: doc.id, ...doc.data()}));
+taskTemplatesLoaded = true;
 ensurePinnedTasksForDate();
 });
 let pendingTaskCreations = new Set();
 function ensurePinnedTasksForDate() {
 if (!currentDate || !taskTemplates.length) return;
+if (!taskTemplatesLoaded || !taskEntriesLoaded) return;
 taskTemplates.forEach(t => {
   if (pendingTaskCreations.has(t.id)) return;
   const exists = taskEntries.some(e => e.templateId === t.id);
@@ -904,11 +918,15 @@ document.getElementById('bigDateLabel').textContent = formatBigDate(currentDate)
 pendingClientEntryCreations.clear();
 pendingShukkaCreations.clear();
 pendingTaskCreations.clear();
+boardEntriesLoaded = false;
+shukkaEntriesLoaded = false;
+taskEntriesLoaded = false;
 if (boardUnsub) boardUnsub();
 boardUnsub = db.collection('haishaBoard').where('date', '==', currentDate).onSnapshot(snapshot => {
   boardEntries = [];
   snapshot.forEach(doc => boardEntries.push({id: doc.id, ...doc.data()}));
   boardEntries.sort((a,b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
+  boardEntriesLoaded = true;
   renderBoard();
   ensurePinnedEntriesForDate();
 });
@@ -923,6 +941,7 @@ shukkaUnsub = db.collection('shukkaBoard').where('date', '==', currentDate).onSn
   shukkaEntries = [];
   snapshot.forEach(doc => shukkaEntries.push({id: doc.id, ...doc.data()}));
   shukkaEntries.sort((a,b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
+  shukkaEntriesLoaded = true;
   renderShukkaBox();
   ensurePinnedShukkaForDate();
 });
@@ -931,6 +950,7 @@ taskUnsub = db.collection('taskBoard').where('date', '==', currentDate).onSnapsh
   taskEntries = [];
   snapshot.forEach(doc => taskEntries.push({id: doc.id, ...doc.data()}));
   taskEntries.sort((a,b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
+  taskEntriesLoaded = true;
   renderTaskBox();
   ensurePinnedTasksForDate();
 });
