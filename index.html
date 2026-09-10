@@ -234,6 +234,7 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <button id="clientModeJomuBtn" onclick="switchClientMode('jomu')">常務の取引先一覧</button>
 </div>
 <div class="tabAddBtnRow"><button onclick="openAddClient()">＋ 取引先を追加</button></div>
+<div class="tabAddBtnRow"><button style="background:#0a6b3d;" onclick="importAllMasterClients()">📥 マスタの取引先をまとめて取り込む(未登録分)</button></div>
 <div style="padding:12px 16px 0;">
   <input type="text" id="clientSearchInput" placeholder="会社名・よみがなで検索" oninput="renderClientList()">
 </div>
@@ -241,8 +242,8 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 <div class="settingsSection">
   <h3 style="margin-top:24px;">その他(共有マスタ)</h3>
   <h4>作業員一覧</h4>
-  <div id="clientWorkerChips"></div>
-  <div class="addRow"><input type="text" id="newClientWorkerInput" placeholder="例:川村"><button onclick="addWorkerFromClientTab()">追加</button></div>
+  <div style="background:#eef3fb;border-radius:10px;padding:12px;font-size:14px;line-height:1.7;">👤 作業員は<b>マスタ管理アプリ</b>の従業員タブで管理する方式になりました。そちらで追加・並べ替えすると、ここにも反映されます。</div>
+  <div id="clientWorkerChips" style="display:none;"></div>
 
   <h4 style="margin-top:20px;">トラック一覧</h4>
   <div id="clientTruckChips"></div>
@@ -812,7 +813,15 @@ db.collection('pickupSettings').doc(docName).onSnapshot(doc => {
 });
 }
 subscribeList('truckList', v => truckList = v);
-subscribeList('collectorList', v => { collectorList = v; ensureWorkerProfilesExist(); });
+// 作業員一覧はマスタ管理の従業員(employees)と連動
+db.collection('employees').onSnapshot(snap => {
+  const arr = [];
+  snap.forEach(d => { const v = d.data(); if (v.name) arr.push({ name: v.name, order: (v.order !== undefined && v.order !== null) ? v.order : 9999 }); });
+  arr.sort((a, b) => a.order - b.order);
+  collectorList = arr.map(x => x.name);
+  ensureWorkerProfilesExist();
+  if (typeof renderSettingsLists === 'function' && activeMainTab === 'settings') renderSettingsLists();
+});
 subscribeList('shuhinOptions', v => shuhinOptions = v);
 subscribeList('manifestTypes', v => manifestTypeList = v);
 subscribeList('shukkaDestinations', v => shukkaDestinations = v);
@@ -2357,6 +2366,33 @@ box.innerHTML=hits.map((c,i)=>
 (c.address?'<br><span style="font-size:12px;color:#666;">📍 '+escapeHtml(c.address)+'</span>':'')+
 '</button>').join('');
 });
+}
+async function importAllMasterClients(){
+const list=await loadMasterPick();
+if(!list.length){alert('マスタの取引先を読み込めませんでした');return;}
+const collectionName = clientListMode === 'jomu' ? 'haishaClientsJomu' : 'haishaClients';
+const existing = (clientListMode === 'jomu' ? clientsJomu : clients) || [];
+const norm=n=>String(n||'').replace(/[\s　]/g,'').replace(/㈱|\(株\)|（株）|株式会社/g,'').replace(/㈲|\(有\)|（有）|有限会社/g,'').toLowerCase();
+const regSet={};
+existing.forEach(c=>{regSet[norm(c.name)]=1;});
+const missing=list.filter(m=>!regSet[norm(m.name)]);
+if(!missing.length){alert('マスタの取引先はすべて登録済みです');return;}
+if(!confirm(missing.length+'社を'+(clientListMode==='jomu'?'常務の':'通常の')+'取引先一覧に取り込みます。よろしいですか？\n(会社名・よみがな・住所が入ります。回収物などはあとから✏️で追加できます)'))return;
+let ok=0;
+for(const m of missing){
+try{
+await db.collection(collectionName).add({
+name:m.name, yomigana:m.yomi||'', address:m.address||'',
+contactName:'', contactPhone:'', shuhinSelected:[],
+items:{flecon:0,anaAkiDrum:0,anaNashiDrum:0,box:0},
+etcUse:'なし', etcCount:'', manifestHas:'なし', manifestDigital:false, manifestTypeSelected:[],
+notes:'', pinned:false,
+updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+});
+ok++;
+}catch(e){}
+}
+alert(ok+'社を取り込みました');
 }
 function pickMasterClient(i){
 const c=(window._mpHits||[])[i];
