@@ -564,6 +564,13 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <h2 id="clientModalTitle">取引先を追加</h2>
   <input type="hidden" id="editClientId">
 
+  <div id="masterPickBox" style="background:#eef3fb;border:2px solid #1e3a8a;border-radius:10px;padding:10px;margin:10px 0;">
+    <label style="margin-top:0;">📇 取引先マスタから引用(会社名・よみがなで検索)</label>
+    <input type="text" id="masterPickInput" placeholder="例:こばやし" oninput="searchMasterPick()" autocomplete="off">
+    <div id="masterPickResults" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;"></div>
+    <div style="font-size:12px;color:#666;margin-top:4px;">選ぶと会社名・よみがな・住所が自動で入ります</div>
+  </div>
+
   <label>会社名(引取先) *</label>
   <input type="text" id="clientNameInput">
   <label>よみがな(ひらがな・検索に使います)</label>
@@ -2324,7 +2331,48 @@ if (selectedClientPinned) {
   btn.textContent = '📌 固定にする(毎日自動で配車ボードに追加)';
 }
 }
+function escapeHtml(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+let masterPickCache=null;
+function mpKataToHira(str){return (str||"").replace(/[\u30a1-\u30f6]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0x60));}
+function loadMasterPick(){
+if(masterPickCache)return Promise.resolve(masterPickCache);
+return db.collection('master_clients').get().then(snap=>{
+masterPickCache=[];
+snap.forEach(d=>{const v=d.data();if(v.name)masterPickCache.push({name:v.name,yomi:v.yomi||'',address:v.address||''});});
+masterPickCache.sort((a,b)=>(a.yomi||a.name).localeCompare(b.yomi||b.name,'ja'));
+return masterPickCache;
+}).catch(()=>{masterPickCache=null;return [];});
+}
+function searchMasterPick(){
+const q=mpKataToHira(document.getElementById('masterPickInput').value.trim().toLowerCase());
+const box=document.getElementById('masterPickResults');
+if(!q){box.innerHTML='';return;}
+loadMasterPick().then(list=>{
+const hits=list.filter(c=>mpKataToHira((c.name||'').toLowerCase()).includes(q)||mpKataToHira((c.yomi||'').toLowerCase()).includes(q)).slice(0,8);
+if(!hits.length){box.innerHTML='<div style="font-size:13px;color:#999;">該当なし(マスタ管理アプリで登録できます)</div>';return;}
+window._mpHits=hits;
+box.innerHTML=hits.map((c,i)=>
+'<button type="button" onclick="pickMasterClient('+i+')" style="text-align:left;border:1px solid #ccc;background:white;border-radius:8px;padding:10px;font-size:14px;">'+
+'<b>'+escapeHtml(c.name)+'</b>'+(c.yomi?'<span style="color:#999;font-size:12px;">　'+escapeHtml(c.yomi)+'</span>':'')+
+(c.address?'<br><span style="font-size:12px;color:#666;">📍 '+escapeHtml(c.address)+'</span>':'')+
+'</button>').join('');
+});
+}
+function pickMasterClient(i){
+const c=(window._mpHits||[])[i];
+if(!c)return;
+document.getElementById('clientNameInput').value=c.name||'';
+document.getElementById('clientYomiganaInput').value=c.yomi||'';
+document.getElementById('clientAddressInput').value=c.address||'';
+document.getElementById('masterPickInput').value='';
+document.getElementById('masterPickResults').innerHTML=
+'<div style="font-size:13px;color:#1e3a8a;font-weight:bold;">✅ '+escapeHtml(c.name)+' をマスタから引用しました</div>';
+}
 function openAddClient() {
+document.getElementById('masterPickBox').style.display='block';
+document.getElementById('masterPickInput').value='';
+document.getElementById('masterPickResults').innerHTML='';
+loadMasterPick();
 document.getElementById('clientModalTitle').textContent = '取引先を追加(' + (clientListMode === 'jomu' ? '常務' : '通常') + ')';
 document.getElementById('editClientId').value = '';
 document.getElementById('deleteClientRow').style.display = 'none';
@@ -2350,6 +2398,7 @@ renderClientPinBtn();
 document.getElementById('clientModal').classList.add('show');
 }
 function openEditClient(id) {
+document.getElementById('masterPickBox').style.display='none';
 const list = clientListMode === 'jomu' ? clientsJomu : clients;
 const c = list.find(x => x.id === id);
 if (!c) return;
