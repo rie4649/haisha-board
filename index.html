@@ -251,8 +251,9 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div id="clientWorkerChips" style="display:none;"></div>
 
   <h4 style="margin-top:20px;">トラック一覧</h4>
-  <div id="clientTruckChips"></div>
-  <div class="addRow"><input type="text" id="newClientTruckInput" placeholder="例:2tトラック"><button onclick="addTruckFromClientTab()">追加</button></div>
+  <div style="background:#fdf2f8;border-radius:10px;padding:12px;font-size:14px;line-height:1.7;">🚚 トラックは<b>マスタ管理アプリ</b>の車両と連動する方式になりました(愛称で表示。愛称がない車は車番)。車の追加・変更はマスタ管理でしてください。</div>
+  <div id="clientTruckChips" style="display:none;"></div>
+  <div class="addRow" style="display:none;"><input type="text" id="newClientTruckInput"><button onclick="addTruckFromClientTab()">追加</button></div>
 
   <h4 style="margin-top:20px;">回収物一覧</h4>
   <div id="clientShuhinChips"></div>
@@ -952,7 +953,14 @@ db.collection('pickupSettings').doc(docName).onSnapshot(doc => {
   if (activeMainTab === 'settings') renderSettingsLists();
 });
 }
-subscribeList('truckList', v => truckList = v);
+// トラック一覧はマスタ管理の車両(master_vehicles)と連動。愛称があれば愛称、なければ車番
+db.collection('master_vehicles').onSnapshot(snap => {
+  const names = [];
+  snap.forEach(d => { const v = d.data(); const n = String(v.nickname || v.number || '').trim(); if (n && !names.includes(n)) names.push(n); });
+  names.sort((a, b) => a.localeCompare(b, 'ja', {numeric: true}));
+  truckList = names;
+  renderClientOtherLists();
+}, err => console.error('車両マスタの読み込みエラー:', err));
 // 作業員一覧はマスタ管理の従業員(employees)と連動
 db.collection('employees').onSnapshot(snap => {
   const arr = [];
