@@ -81,6 +81,11 @@ header h1 { margin: 0; font-size: 18px; }
 .badge.pm { background: #d6e4ff; color: #1d3f8f; }
 .badge.custom { background: #e6e6e6; color: #444; }
 .badge.etc { background: #eee0ff; color: #5b2d91; }
+.badge.cal { background: #e0f2f1; color: #0f766e; }
+.badge.mach { background: #dbeafe; color: #1d4ed8; }
+.badge.miss { background: #fef3c7; color: #b45309; }
+.truckPill { display: inline-block; background: #fbcfe8; border: 1.5px solid #db2777; color: #831843; border-radius: 999px; padding: 1px 10px; font-weight: bold; margin: 0 4px 2px 0; }
+.calEntryNote { background: #e0f2f1; border: 1px solid #99f6e4; color: #0f766e; border-radius: 10px; padding: 10px 12px; font-size: 14px; font-weight: bold; line-height: 1.6; margin-bottom: 8px; }
 .topRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .phoneBtn { background: #2e7d32; color: white; border: none; border-radius: 8px; padding: 6px 10px; font-size: 13px; text-decoration: none; display: inline-block; }
 .statusBtn { border: none; border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: bold; }
@@ -289,6 +294,7 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
   <div class="closeBtn" onclick="closeModal('entryModal')">閉じる ✕</div>
   <h2 id="entryModalTitle">予定を追加</h2>
   <input type="hidden" id="editEntryId">
+  <div class="calEntryNote" id="calEntryNote" style="display:none;">📅 関根カレンダーから来た予定です。<br>会社名・日付・時間・行く人・トラック・持ち物はカレンダーで直してください(ここで直しても、カレンダーの内容に戻ります)。<br>メモ・マニフェスト・ETCなどは、ここで直してOKです。</div>
 
   <label>担当</label>
   <div class="timeTypeRow">
@@ -754,6 +760,7 @@ snapshot.forEach(doc => clients.push({id: doc.id, ...doc.data()}));
 clientsLoaded = true;
 renderClientList();
 ensurePinnedEntriesForDate();
+scheduleCalSync();
 });
 db.collection('haishaClientsJomu').orderBy('name').onSnapshot(snapshot => {
 clientsJomu = [];
@@ -761,6 +768,7 @@ snapshot.forEach(doc => clientsJomu.push({id: doc.id, ...doc.data()}));
 clientsJomuLoaded = true;
 renderClientList();
 ensurePinnedEntriesForDate();
+scheduleCalSync();
 });
 let pendingClientEntryCreations = new Set();
 function ensurePinnedEntriesForDate() {
@@ -804,6 +812,138 @@ allPinned.forEach(({c, listType}) => {
   }).catch(err => console.error('固定予定の確認に失敗:', err));
 });
 }
+// ===== 関根カレンダー → 配車ボード(自動で取り込み・カレンダーを直すと反映) =====
+// 1件ごとに決まった番号(cal_ev_予定ID_日付 / cal_ph_電話依頼ID_日付)で入れるので、二重にはなりません。
+const CAL_SYNC_KEYS = ['listType', 'timeType', 'companyName', 'phoneRequest', 'superPriorityFlag', 'workers', 'truck', 'items', 'calNote', 'calMissed', 'calKind', 'contactPerson', 'department', 'phone'];
+const CAL_KEEP_IF_EMPTY = ['contactPerson', 'department', 'phone'];   // カレンダー側が空なら配車ボードの値を残す
+let calEvents = [], calPhones = [], calEventsLoaded = false, calPhonesLoaded = false, calPhoneUnsub = null;
+let masterClients = [];
+db.collection('calendarEvents').onSnapshot(snap => {
+  calEvents = [];
+  snap.forEach(doc => calEvents.push({id: doc.id, ...doc.data()}));
+  calEventsLoaded = true;
+  scheduleCalSync();
+}, err => console.error('カレンダーの読み込みエラー:', err));
+db.collection('master_clients').get().then(snap => {
+  masterClients = snap.docs.map(d => ({id: d.id, ...d.data()}));
+}).catch(err => console.error(err));
+
+function calParse(s) { const a = s.split('-').map(Number); return new Date(a[0], a[1]-1, a[2]); }
+function calOccursOn(ev, ds) {
+  if (!ev.date || ds < ev.date) return false;
+  if (ev.endDate && ds > ev.endDate) return false;
+  if ((ev.skipDates || []).includes(ds)) return false;
+  const rep = ev.repeat || 'none';
+  if (rep === 'none') return ds === ev.date;
+  const d = calParse(ds), s = calParse(ev.date);
+  const wd = (ev.wdays && ev.wdays.length) ? ev.wdays : [s.getDay()];
+  if (rep === 'weekly') return wd.includes(d.getDay());
+  if (rep === 'biweekly') {
+    if (!wd.includes(d.getDay())) return false;
+    const mon = x => { const t = new Date(x); t.setDate(t.getDate() - ((t.getDay()+6)%7)); t.setHours(0,0,0,0); return t; };
+    return Math.round((mon(d) - mon(s)) / (7*86400000)) % 2 === 0;
+  }
+  if (rep === 'monthlyDate') return d.getDate() === s.getDate();
+  if (rep === 'monthlyNth') return d.getDay() === s.getDay() && Math.ceil(d.getDate()/7) === Math.ceil(s.getDate()/7);
+  return false;
+}
+function calNk(n) { return String(n || '').normalize('NFKC').replace(/[\s　]/g, ''); }
+function calItems(it) { it = it || {}; return {flecon: it.flexBag || 0, anaAkiDrum: it.holeDrum || 0, anaNashiDrum: it.noHoleDrum || 0, box: it.box || 0}; }
+function calTime(a) { return a === '午前' ? 'am' : a === '午後' ? 'pm' : ''; }
+
+// その日、カレンダーにある予定 → 配車ボードに入る形
+function calDesired(ds) {
+  const out = {};
+  calEvents.forEach(ev => {
+    if (!calOccursOn(ev, ds)) return;
+    const kind = (ev.kind === 'machine' || ev.kind === 'other') ? 'machine' : ev.kind === 'jomu' ? 'jomu' : 'regular';
+    const it = ev.items || {};
+    out['cal_ev_' + ev.id + '_' + ds] = {
+      calSource: 'event', calId: ev.id, masterClientId: ev.clientId || '', ampm: ev.ampm || '',
+      calKind: kind, listType: kind === 'jomu' ? 'jomu' : 'normal',
+      timeType: calTime(ev.ampm), companyName: ev.title || '',
+      phoneRequest: false, superPriorityFlag: false,
+      workers: (ev.goersByDate || {})[ds] || [], truck: ((ev.trucksByDate || {})[ds] || []).join('・'),
+      items: calItems(it),
+      calNote: [kind === 'machine' ? ev.work : ev.hinmoku, it.other, ev.memo].filter(Boolean).join(' / '),
+      calDone: (ev.doneDates || []).includes(ds), calMissed: (ev.missedDates || []).includes(ds),
+      contactPerson: ev.contact || '', department: '', phone: ev.tel || ''
+    };
+  });
+  calPhones.forEach(p => {
+    if (p.pickupDate !== ds) return;
+    const urg = p.urgency && p.urgency !== '通常' ? p.urgency : '';
+    const done = p.status === '対応済み' || p.pickupResult === 'done';
+    out['cal_ph_' + p.id + '_' + ds] = {
+      calSource: 'phone', calId: p.id, masterClientId: p.clientId || '', ampm: p.ampm || '',
+      calKind: 'pickup', listType: 'normal',
+      timeType: calTime(p.ampm), companyName: p.client || '(会社名なし)',
+      phoneRequest: true, superPriorityFlag: urg === '大至急' || urg === '至急',
+      workers: p.pickupGoers || [], truck: (p.pickupTrucks || []).join('・'),
+      items: calItems(p.items),
+      calNote: [urg, (p.contents || []).join('、'), (p.items || {}).other, p.pickupNote].filter(Boolean).join(' / '),
+      calDone: done, calMissed: !done && p.pickupResult === 'missed',
+      contactPerson: p.clientContact || '', department: p.clientDept || '', phone: p.phone || ''
+    };
+  });
+  return out;
+}
+
+let calSyncTimer = null;
+function scheduleCalSync() { clearTimeout(calSyncTimer); calSyncTimer = setTimeout(syncCalendarToBoard, 400); }
+function syncCalendarToBoard() {
+  if (!currentDate || !boardEntriesLoaded || !calEventsLoaded || !calPhonesLoaded || !clientsLoaded || !clientsJomuLoaded) return;
+  const ds = currentDate;
+  const want = calDesired(ds);
+  const ids = Object.keys(want);
+  // 並び順:午前 → 時間なし → 午後
+  const ord = {'午前': 0, '': 1, 'どちらでも': 1, '午後': 2};
+  ids.sort((a, b) => (ord[want[a].ampm] ?? 1) - (ord[want[b].ampm] ?? 1));
+  const base = Date.now();
+  ids.forEach((id, i) => {
+    const w = want[id];
+    const cur = boardEntries.find(x => x.id === id);
+    if (!cur) {
+      // はじめて入る:取引先(配車ボード・マスタ)の住所などを入れておく
+      const src = w.listType === 'jomu' ? clientsJomu.concat(clients) : clients.concat(clientsJomu);
+      const c = src.find(x => calNk(x.name) === calNk(w.companyName)) || null;
+      const mc = masterClients.find(x => (w.masterClientId && x.id === w.masterClientId) || calNk(x.name) === calNk(w.companyName)) || {};
+      const data = {
+        date: ds, listType: w.listType, timeType: w.timeType, customTime: '',
+        companyName: w.companyName, companyId: c ? c.id : '',
+        phoneRequest: w.phoneRequest, fastFlag: false, superPriorityFlag: w.superPriorityFlag,
+        department: w.department, contactPerson: w.contactPerson || (c && c.contactName) || '',
+        phone: w.phone || (c && c.contactPhone) || mc.tel || '',
+        pickupPlace: (c && c.address) || mc.address || '',
+        workers: w.workers, truck: w.truck,
+        shuhinSelected: (c && c.shuhinSelected) || [],
+        items: w.items, belongings: '',
+        etcUse: (c && c.etcUse) || 'なし', etcCount: (c && c.etcCount) || '',
+        manifestHas: (c && c.manifestHas) || 'なし', manifestDigital: (c && c.manifestDigital) || false,
+        manifestTypeSelected: (c && c.manifestTypeSelected) || [],
+        notes: '', calNote: w.calNote, calSource: w.calSource, calId: w.calId, calKind: w.calKind, calMissed: w.calMissed,
+        status: w.calDone ? 'done' : 'pending',
+        createdAtMs: base + i,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      db.collection('haishaBoard').doc(id).set(data).catch(err => console.error('カレンダーからの取り込みに失敗:', err));
+      return;
+    }
+    // もう入っている:カレンダーで変わったところだけ直す
+    const upd = {};
+    CAL_SYNC_KEYS.forEach(k => {
+      if (CAL_KEEP_IF_EMPTY.includes(k) && !w[k]) return;
+      if (JSON.stringify(cur[k] ?? null) !== JSON.stringify(w[k] ?? null)) upd[k] = w[k];
+    });
+    if (w.calDone && cur.status !== 'done') upd.status = 'done';
+    if (Object.keys(upd).length) db.collection('haishaBoard').doc(id).update(upd).catch(err => console.error('カレンダーからの反映に失敗:', err));
+  });
+  // カレンダーで消した・別の日に移した・この日だけ消した → 配車ボードからも外す
+  boardEntries.filter(e => e.calSource && e.date === ds && !want[e.id]).forEach(e => {
+    db.collection('haishaBoard').doc(e.id).delete().catch(err => console.error('カレンダーから消えた予定の削除に失敗:', err));
+  });
+}
+
 function subscribeList(docName, setter) {
 db.collection('pickupSettings').doc(docName).onSnapshot(doc => {
   setter((doc.exists && doc.data().names) ? doc.data().names : []);
@@ -945,7 +1085,18 @@ boardUnsub = db.collection('haishaBoard').where('date', '==', currentDate).onSna
   boardEntriesLoaded = true;
   renderBoard();
   ensurePinnedEntriesForDate();
+  scheduleCalSync();
 });
+calPhonesLoaded = false;
+if (calPhoneUnsub) calPhoneUnsub();
+const phoneDate = currentDate;
+calPhoneUnsub = db.collection('phoneRequests').where('pickupDate', '==', phoneDate).onSnapshot(snap => {
+  if (phoneDate !== currentDate) return;
+  calPhones = [];
+  snap.forEach(doc => calPhones.push({id: doc.id, ...doc.data()}));
+  calPhonesLoaded = true;
+  scheduleCalSync();
+}, err => console.error('電話依頼の読み込みエラー:', err));
 if (boardAttendanceUnsub) boardAttendanceUnsub();
 boardAttendanceUnsub = db.collection('bentoDaily').doc(currentDate).onSnapshot(doc => {
   boardAttendanceData = (doc.exists && doc.data().entries) ? doc.data().entries : {};
@@ -996,6 +1147,9 @@ html += '<div class="topRow">';
 if (e.superPriorityFlag) html += '<span class="badge" style="background:#ffcdd2;color:#b71c1c;">🔥 超優先</span>';
 if (e.fastFlag) html += '<span class="badge" style="background:#fff3cd;color:#8a6d00;">⚡ 早い人</span>';
 if (e.phoneRequest) html += '<span class="badge" style="background:#ffe0e0;color:#c0392b;">☎️ 電話依頼</span>';
+if (e.calSource) html += '<span class="badge cal">📅 カレンダー</span>';
+if (e.calKind === 'machine') html += '<span class="badge mach">🏗 機械移動</span>';
+if (e.calMissed) html += '<span class="badge miss">✖ 行けなかった</span>';
 if (e.phone) html += '<a class="phoneBtn" href="tel:' + e.phone + '" onclick="event.stopPropagation();">📞 ' + e.phone + '</a>';
 html += '<button class="statusBtn ' + status + '" onclick="event.stopPropagation();toggleStatus(\'' + e.id + '\')">' + (status === 'done' ? '回収済' : '未回収') + '</button>';
 html += timeBadgeHtml(e);
@@ -1006,7 +1160,8 @@ if (e.department) html += '<div class="rowLine"><span class="ico">🏢</span><sp
 if (e.contactPerson) html += '<div class="rowLine"><span class="ico">🙋</span><span>' + e.contactPerson + '</span></div>';
 if (e.pickupPlace) html += '<div class="rowLine"><span class="ico">📍</span><span>' + e.pickupPlace + '</span></div>';
 if (e.workers && e.workers.length) html += '<div class="rowLine"><span class="ico">👷</span><span>' + arrLabel(e.workers) + '</span></div>';
-if (e.truck) html += '<div class="rowLine"><span class="ico">🚚</span><span>' + e.truck + '</span></div>';
+if (e.truck) html += '<div class="rowLine"><span class="ico">🚚</span><span>' + String(e.truck).split('・').filter(Boolean).map(t => '<span class="truckPill">' + t + '</span>').join('') + '</span></div>';
+if (e.calNote) html += '<div class="rowLine"><span class="ico">📅</span><span>' + e.calNote + '</span></div>';
 if (e.shuhinSelected && e.shuhinSelected.length) html += '<div class="rowLine"><span class="ico">♻️</span><span>' + arrLabel(e.shuhinSelected) + '</span></div>';
 const itemsText = itemsLabelFor(e.items);
 if (itemsText && itemsText !== 'なし') html += '<div class="rowLine"><span class="ico">📦</span><span>' + itemsText + '</span></div>';
@@ -1709,6 +1864,7 @@ document.getElementById('etcCountWrap').style.display = (v === 'あり') ? 'bloc
 
 function openAddEntry(listType) {
 document.getElementById('entryModalTitle').textContent = '予定を追加';
+document.getElementById('calEntryNote').style.display = 'none';
 document.getElementById('editEntryId').value = '';
 document.getElementById('deleteEntryRow').style.display = 'none';
 document.getElementById('entryReminderRow').style.display = 'none';
@@ -1748,6 +1904,7 @@ function openEditEntry(entryId) {
 const e = boardEntries.find(x => x.id === entryId);
 if (!e) return;
 document.getElementById('entryModalTitle').textContent = '予定を編集';
+document.getElementById('calEntryNote').style.display = e.calSource ? 'block' : 'none';
 document.getElementById('editEntryId').value = e.id;
 document.getElementById('deleteEntryRow').style.display = 'flex';
 document.getElementById('entryReminderRow').style.display = 'flex';
@@ -1958,6 +2115,11 @@ const data = {
 
 function finalizeSaveEntry() {
   const editId = document.getElementById('editEntryId').value;
+  const calE = editId ? boardEntries.find(x => x.id === editId && x.calSource) : null;
+  if (calE) {
+    // カレンダーから来た予定:カレンダーが決める項目はさわらない
+    CAL_SYNC_KEYS.concat(['date', 'customTime', 'companyId']).forEach(k => delete data[k]);
+  }
   if (editId) {
     db.collection('haishaBoard').doc(editId).update(data)
       .then(() => closeModal('entryModal'))
@@ -1972,7 +2134,8 @@ function finalizeSaveEntry() {
   }
 }
 
-if (!data.companyId) {
+const editingCal = boardEntries.some(x => x.id === document.getElementById('editEntryId').value && x.calSource);
+if (!data.companyId && !editingCal) {
   const source = selectedEntryListType === 'jomu' ? clientsJomu : clients;
   const existing = source.find(c => c.name === companyName);
   if (existing) {
@@ -2005,6 +2168,7 @@ function deleteEntry() {
 const editId = document.getElementById('editEntryId').value;
 if (!editId) return;
 const e = boardEntries.find(x => x.id === editId);
+if (e && e.calSource) { alert('この予定は関根カレンダーから来ています。\n消すときは、関根カレンダーで消すか「行かない日」にしてください。'); return; }
 let pinnedClient = null;
 if (e && e.companyId) {
   const source = (e.listType || 'normal') === 'jomu' ? clientsJomu : clients;
