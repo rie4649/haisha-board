@@ -281,6 +281,7 @@ button.danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; }
 <div class="section" id="section-settings">
 <div class="settingsSection">
   <h3>作業員一覧(お弁当設定)</h3>
+  <div style="font-size:12px;color:#666;margin-bottom:6px;">班(A班/B班/Free)はマスタ管理の「従業員」で変えます。ここでは見るだけです。</div>
   <div id="workerSettingsList"></div>
   <div class="addRow">
     <input type="text" id="newWorkerInput" placeholder="例:川村">
@@ -1067,12 +1068,21 @@ db.collection('master_vehicles').onSnapshot(snap => {
   renderClientOtherLists();
 }, err => console.error('車両マスタの読み込みエラー:', err));
 // 作業員一覧はマスタ管理の従業員(employees)と連動
+// 班もマスタ管理の employees.team を読むだけ(ここでは変えない)
+let employeeTeams = {};
+function teamOf(name) {
+// マスタ管理へ班を写す前の人だけ、これまでの配車ボードの班を使う
+if (Object.prototype.hasOwnProperty.call(employeeTeams, name)) return employeeTeams[name] || null;
+return (workerProfiles[name] && workerProfiles[name].team) || null;
+}
 db.collection('employees').onSnapshot(snap => {
-  const arr = [];
-  snap.forEach(d => { const v = d.data(); if (v.name) arr.push({ name: v.name, order: (v.order !== undefined && v.order !== null) ? v.order : 9999 }); });
+  const arr = [], teams = {};
+  snap.forEach(d => { const v = d.data(); if (v.name) { arr.push({ name: v.name, order: (v.order !== undefined && v.order !== null) ? v.order : 9999 }); if (v.team !== undefined) teams[v.name] = v.team; } });
   arr.sort((a, b) => a.order - b.order);
   collectorList = arr.map(x => x.name);
+  employeeTeams = teams;
   ensureWorkerProfilesExist();
+  renderAttendanceBoxes();
   if (typeof renderSettingsLists === 'function' && activeMainTab === 'settings') renderSettingsLists();
 });
 subscribeList('shuhinOptions', v => shuhinOptions = v);
@@ -1308,7 +1318,7 @@ const btnClass = offType === 'none' ? '' : 'off';
 const btnLabel = labels[offType];
 const safe = name.replace(/'/g,"\\'");
 const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
-const workerTeam = (workerProfiles[name] && workerProfiles[name].team) || null;
+const workerTeam = teamOf(name);
 const teamTagLabel = workerTeam ? teamLabels[workerTeam] : '班未設定';
 const teamTagColor = workerTeam ? teamColors[workerTeam] : '#999';
 const partTag = state.part ? '<span style="background:#00897b;color:white;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;">バイト</span>' : '';
@@ -1338,7 +1348,7 @@ let attendanceTeamFilter = 'all';
 function matchesTeamFilter(name) {
 if (attendanceTeamFilter === 'all') return true;
 const state = boardAttendanceData[name] || {};
-const workerTeam = (workerProfiles[name] && workerProfiles[name].team) || null;
+const workerTeam = teamOf(name);
 if (attendanceTeamFilter === 'part') return !!state.part;
 if (attendanceTeamFilter === 'A') return workerTeam === 'A' || workerTeam === 'free' || !!state.part;
 if (attendanceTeamFilter === 'B') return workerTeam === 'B' || workerTeam === 'free' || !!state.part;
@@ -2907,9 +2917,8 @@ const teamColors = {A: '#1976d2', B: '#2e7d32', free: '#e91e63'};
 wDiv.innerHTML = collectorList.map((name, i) => {
   const profile = Object.assign(defaultProfile(), workerProfiles[name] || {});
   const safe = name.replace(/'/g,"\\'");
-  const teamBtns = ['A','B','free'].map(t =>
-    '<button type="button" class="pillBtn" style="' + (profile.team === t ? 'background:' + teamColors[t] + ';color:white;border-color:' + teamColors[t] + ';' : '') + '" onclick="updateWorkerTeam(\'' + safe + '\',\'' + t + '\')">' + teamLabels[t] + '</button>'
-  ).join('');
+  const team = teamOf(name);
+  const teamBtns = '<span title="班はマスタ管理の「従業員」で変えられます" style="background:' + (team ? teamColors[team] : '#999') + ';color:white;font-size:12px;font-weight:bold;padding:3px 10px;border-radius:10px;">' + (team ? teamLabels[team] : '班未設定') + '</span>';
   const btns = ['rice','side','noodle','shellfish_no','none'].map(key =>
     '<button type="button" class="pillBtn ' + (profile.bentoType === key ? 'active' : '') + '" onclick="updateWorkerBentoType(\'' + safe + '\',\'' + key + '\')">' + bentoLabels[key] + '</button>'
   ).join('');
@@ -2937,11 +2946,6 @@ function updateWorkerProfileField(name, field, value) {
 db.collection('pickupSettings').doc('workerBentoProfiles').set({profiles: {[name]: {[field]: value}}}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
 }
 function updateWorkerBentoType(name, bentoType) { updateWorkerProfileField(name, 'bentoType', bentoType); }
-function updateWorkerTeam(name, team) {
-const existing = workerProfiles[name] || {};
-const newTeam = existing.team === team ? null : team;
-updateWorkerProfileField(name, 'team', newTeam);
-}
 function toggleWorkerPart(name) {
 const existing = boardAttendanceData[name] || {};
 db.collection('bentoDaily').doc(currentDate).set({entries: {[name]: {part: !existing.part}}}, {merge: true}).catch(err => alert('保存に失敗しました: ' + err.message));
@@ -2951,7 +2955,7 @@ const el = document.getElementById('partTimeChecks');
 if (!collectorList.length) { el.innerHTML = '<span style="color:#999;font-size:13px;">作業員一覧が未登録です</span>'; document.getElementById('partTimeModal').classList.add('show'); return; }
 el.innerHTML = collectorList.map(name => {
   const isPart = !!(boardAttendanceData[name] && boardAttendanceData[name].part);
-  const team = (workerProfiles[name] && workerProfiles[name].team) || null;
+  const team = teamOf(name);
   const teamLabelsShort = {A: '(A班)', B: '(B班)', free: '(Free)'};
   return '<label><input type="checkbox" class="partTimeCk" value="' + name + '" ' + (isPart ? 'checked' : '') + '> ' + name + (team ? teamLabelsShort[team] : '') + '</label>';
 }).join('');
